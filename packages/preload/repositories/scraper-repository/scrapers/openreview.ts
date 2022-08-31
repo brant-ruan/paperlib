@@ -20,10 +20,7 @@ export class OpenreviewScraper extends Scraper {
     };
 
     if (enable) {
-      this.sharedState.set(
-        "viewState.processInformation",
-        `Scraping metadata from openreview.net ...`
-      );
+      this.stateStore.logState.processLog.value = `Scraping metadata from openreview.net ...`;
     }
 
     return { scrapeURL, headers, enable };

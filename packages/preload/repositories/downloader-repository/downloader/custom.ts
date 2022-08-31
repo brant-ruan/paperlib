@@ -7,12 +7,18 @@ import { PaperEntityDraft } from "../../../models/PaperEntityDraft";
 import { Preference, DownloaderPreference } from "../../../utils/preference";
 import { SharedState } from "../../../utils/appstate";
 import { downloadPDFs } from "../../../utils/got";
+import { PreloadStateStore } from "../../../../state/appstate";
 
 export class CustomDownloader extends Downloader {
   name = "";
 
-  constructor(sharedState: SharedState, preference: Preference, name: string) {
-    super(sharedState, preference);
+  constructor(
+    sharedState: SharedState,
+    stateStore: PreloadStateStore,
+    preference: Preference,
+    name: string
+  ) {
+    super(sharedState, stateStore, preference);
 
     this.name = name;
   }
@@ -35,10 +41,7 @@ export class CustomDownloader extends Downloader {
     }
 
     if (enable) {
-      this.sharedState.set(
-        "viewState.processInformation",
-        `Download PDF from ${this.name}...`
-      );
+      this.stateStore.logState.processLog.value = `Download PDF from ${this.name}...`;
     }
 
     return { queryUrl, headers, enable };
@@ -94,7 +97,7 @@ async function downloadImpl(
         entityDraft
       );
       if (downloadUrl) {
-        this.sharedState.set("viewState.processInformation", "Downloading...");
+        this.stateStore.logState.processLog.value = `Downloading...`;
         const downloadedUrl = await downloadPDFs([downloadUrl], agent);
 
         if (downloadedUrl.length > 0) {

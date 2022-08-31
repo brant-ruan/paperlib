@@ -29,10 +29,6 @@ const emits = defineEmits([
 
 const onAddClicked = () => {
   if (props.feedEntityAddingStatus === 0) {
-    window.appInteractor.setState(
-      "viewState.processInformation",
-      "Adding to Library..."
-    );
     emits("add-clicked");
   }
 };

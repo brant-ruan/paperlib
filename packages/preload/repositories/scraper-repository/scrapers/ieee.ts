@@ -35,10 +35,7 @@ export class IEEEScraper extends Scraper {
     };
 
     if (enable) {
-      this.sharedState.set(
-        "viewState.processInformation",
-        `Scraping metadata from IEEE Xplore ...`
-      );
+      this.stateStore.logState.processLog.value = `Scraping metadata from IEEE Xplore ...`;
     }
 
     return { scrapeURL, headers, enable };

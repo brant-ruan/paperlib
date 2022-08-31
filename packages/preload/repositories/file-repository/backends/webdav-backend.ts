@@ -10,16 +10,23 @@ import { promises as fsPromise, readFileSync, existsSync, mkdirSync } from "fs";
 
 import { Preference } from "../../../utils/preference";
 import { SharedState } from "../../../utils/appstate";
+import { PreloadStateStore } from "../../../../state/appstate";
 import { constructFileURL } from "../../../utils/path";
 
 export class WebDavFileBackend implements FileBackend {
   sharedState: SharedState;
+  stateStore: PreloadStateStore;
   preference: Preference;
 
   webdavClient: WebDAVClient | null;
 
-  constructor(sharedState: SharedState, preference: Preference) {
+  constructor(
+    sharedState: SharedState,
+    stateStore: PreloadStateStore,
+    preference: Preference
+  ) {
     this.sharedState = sharedState;
+    this.stateStore = stateStore;
     this.preference = preference;
 
     this.webdavClient = null;
@@ -47,10 +54,9 @@ export class WebDavFileBackend implements FileBackend {
             );
           } catch (error) {
             console.log(error);
-            this.sharedState.set(
-              "viewState.alertInformation",
-              `Could not upload file to webdav: ${error as string}`
-            );
+            this.stateStore.logState.alertLog.value = `Could not upload file to webdav: ${
+              error as string
+            }`;
           }
         }
       });
@@ -75,10 +81,7 @@ export class WebDavFileBackend implements FileBackend {
       return true;
     } catch (error) {
       console.log(error);
-      this.sharedState.set(
-        "viewState.alertInformation",
-        "Could not connect to webdav, check your username, password and url."
-      );
+      this.stateStore.logState.alertLog.value = `Could not connect to webdav, check your username, password and url.`;
       return false;
     }
   }
@@ -103,10 +106,9 @@ export class WebDavFileBackend implements FileBackend {
           );
         } catch (error) {
           console.log(error);
-          this.sharedState.set(
-            "viewState.alertInformation",
-            `Could not download file from webdav: ${error as string}`
-          );
+          this.stateStore.logState.alertLog.value = `Could not download file from webdav: ${
+            error as string
+          }`;
           return "";
         }
       } else {
@@ -162,10 +164,9 @@ export class WebDavFileBackend implements FileBackend {
       await fsPromise.copyFile(_sourceURL, _targetURL);
       return true;
     } catch (error) {
-      this.sharedState.set(
-        "viewState.alertInformation",
-        `Could not copy file: ${error as string}`
-      );
+      this.stateStore.logState.alertLog.value = `Could not copy file: ${
+        error as string
+      }`;
       return false;
     }
   }
@@ -231,10 +232,9 @@ export class WebDavFileBackend implements FileBackend {
       }
       return success;
     } catch (error) {
-      this.sharedState.set(
-        "viewState.alertInformation",
-        `Could not upload to webdav: ${error as string}`
-      );
+      this.stateStore.logState.alertLog.value = `Could not upload to webdav: ${
+        error as string
+      }`;
       return false;
     }
   }
@@ -415,10 +415,9 @@ export class WebDavFileBackend implements FileBackend {
       await this.webdavClient?.deleteFile(_sourceURL);
       return true;
     } catch (error) {
-      this.sharedState.set(
-        "viewState.alertInformation",
-        `Could not remove file on webdav: ${error as string}`
-      );
+      this.stateStore.logState.alertLog.value = `Could not remove file on webdav: ${
+        error as string
+      }`;
       return false;
     }
   }
@@ -458,10 +457,9 @@ export class WebDavFileBackend implements FileBackend {
       return await this._remove(fileURL);
       return true;
     } catch (error) {
-      this.sharedState.set(
-        "viewState.alertInformation",
-        `Could not remove file: ${error as string}`
-      );
+      this.stateStore.logState.alertLog.value = `Could not remove file: ${
+        error as string
+      }`;
       return false;
     }
   }

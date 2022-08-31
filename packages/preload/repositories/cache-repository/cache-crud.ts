@@ -32,10 +32,7 @@ export async function update(this: CacheRepository, entities: PaperEntity[]) {
 
   if (newObjs.length > 3) {
     this.sharedState.set("viewState.processingQueueCount", newObjs.length);
-    this.sharedState.set(
-      "viewState.processInformation",
-      `indexing ${newObjs.length} papers, please wait for a while...`
-    );
+    this.stateStore.logState.processLog.value = `Indexing ${newObjs.length} papers, please wait for a while...`;
   }
 
   // 2. Update the cache
@@ -46,10 +43,9 @@ export async function update(this: CacheRepository, entities: PaperEntity[]) {
 
   let i = 0;
   for (const obj of newObjs) {
-    this.sharedState.set(
-      "viewState.processInformation",
-      `indexing ${newObjs.length - i} papers, please wait for a while...`
-    );
+    this.stateStore.logState.processLog.value = `Indexing ${
+      newObjs.length - i
+    } papers, please wait for a while...`;
     i++;
 
     const fulltext = await this.getPDFText(obj.mainURL);

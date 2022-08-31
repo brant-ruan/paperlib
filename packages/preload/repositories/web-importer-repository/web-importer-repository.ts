@@ -10,27 +10,51 @@ import { PDFUrlWebImporter } from "./importers/pdfurl";
 
 import { Preference } from "../../utils/preference";
 import { SharedState } from "../../utils/appstate";
+import { PreloadStateStore } from "../../../state/appstate";
 import { PaperEntityDraft } from "../../models/PaperEntityDraft";
 
 export class WebImporterRepository {
   sharedState: SharedState;
+  stateStore: PreloadStateStore;
   preference: Preference;
 
   importerList: Record<string, WebImporterType>;
 
-  constructor(sharedState: SharedState, preference: Preference) {
+  constructor(
+    sharedState: SharedState,
+    stateStore: PreloadStateStore,
+    preference: Preference
+  ) {
     this.sharedState = sharedState;
+    this.stateStore = stateStore;
     this.preference = preference;
 
     this.importerList = {
-      arxiv: new ArXivWebImporter(this.sharedState, this.preference),
-      googlescholar: new GoogleScholarWebImporter(
+      arxiv: new ArXivWebImporter(
         this.sharedState,
+        this.stateStore,
         this.preference
       ),
-      ieee: new IEEEWebImporter(this.sharedState, this.preference),
-      embed: new EmbedWebImporter(this.sharedState, this.preference),
-      pdfurl: new PDFUrlWebImporter(this.sharedState, this.preference),
+      googlescholar: new GoogleScholarWebImporter(
+        this.sharedState,
+        this.stateStore,
+        this.preference
+      ),
+      ieee: new IEEEWebImporter(
+        this.sharedState,
+        this.stateStore,
+        this.preference
+      ),
+      embed: new EmbedWebImporter(
+        this.sharedState,
+        this.stateStore,
+        this.preference
+      ),
+      pdfurl: new PDFUrlWebImporter(
+        this.sharedState,
+        this.stateStore,
+        this.preference
+      ),
     };
   }
 
@@ -40,10 +64,9 @@ export class WebImporterRepository {
       try {
         parsed = await importer.parse(webContent);
       } catch (error) {
-        this.sharedState.set(
-          "viewState.alertInformation",
-          `Web importer ${name} error: ${error as string}`
-        );
+        this.stateStore.logState.alertLog.value = `Web importer ${name} error: ${
+          error as string
+        }`;
       }
       if (parsed) {
         break;

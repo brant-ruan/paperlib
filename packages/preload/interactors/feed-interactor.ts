@@ -1,6 +1,7 @@
 import { ToadScheduler, SimpleIntervalJob, Task } from "toad-scheduler";
 
 import { SharedState } from "../utils/appstate";
+import { PreloadStateStore } from "../../state/appstate";
 import { Preference } from "../utils/preference";
 
 import { DBRepository } from "../repositories/db-repository/db-repository";
@@ -15,6 +16,7 @@ import { EntityInteractor } from "./entity-interactor";
 
 export class FeedInteractor {
   sharedState: SharedState;
+  stateStore: PreloadStateStore;
   preference: Preference;
 
   dbRepository: DBRepository;
@@ -28,6 +30,7 @@ export class FeedInteractor {
 
   constructor(
     sharedState: SharedState,
+    stateStore: PreloadStateStore,
     preference: Preference,
     dbRepository: DBRepository,
     scraperRepository: ScraperRepository,
@@ -36,6 +39,7 @@ export class FeedInteractor {
     entityInteractor: EntityInteractor
   ) {
     this.sharedState = sharedState;
+    this.stateStore = stateStore;
     this.preference = preference;
 
     this.dbRepository = dbRepository;
@@ -64,10 +68,7 @@ export class FeedInteractor {
     sortOrder: string
   ) {
     if (this.sharedState.viewState.searchMode.get() === "fulltext" && search) {
-      this.sharedState.set(
-        "viewState.alertInformation",
-        `Fulltext searching is not supported in the feeds view.`
-      );
+      this.stateStore.logState.alertLog.value = `Fulltext searching is not supported in the feeds view.`;
       search = "";
     }
 
@@ -101,10 +102,9 @@ export class FeedInteractor {
         await this.refresh(feedDraft.name);
       }
     } catch (error) {
-      this.sharedState.set(
-        "viewState.alertInformation",
-        `Update feed failed: ${error as string}`
-      );
+      this.stateStore.logState.alertLog.value = `Update feed failed: ${
+        error as string
+      }`;
     }
 
     this.sharedState.set(
@@ -149,10 +149,9 @@ export class FeedInteractor {
         feedEntityDrafts.map((feedEntityDraft) => addPromise(feedEntityDraft))
       );
     } catch (error) {
-      this.sharedState.set(
-        "viewState.alertInformation",
-        `Add paper from feed failed: ${error as string}`
-      );
+      this.stateStore.logState.alertLog.value = `Add paper from feed failed: ${
+        error as string
+      }`;
     }
 
     this.sharedState.set(
@@ -172,10 +171,9 @@ export class FeedInteractor {
 
       await this.dbRepository.updateFeedEntities(feedEntityDrafts);
     } catch (error) {
-      this.sharedState.set(
-        "viewState.alertInformation",
-        `Update feed failed: ${error as string}`
-      );
+      this.stateStore.logState.alertLog.value = `Update feed failed: ${
+        error as string
+      }`;
     }
 
     this.sharedState.set(
@@ -195,10 +193,9 @@ export class FeedInteractor {
     try {
       await this.dbRepository.deleteFeeds([feedName]);
     } catch (error) {
-      this.sharedState.set(
-        "viewState.alertInformation",
-        `Delete feed failed: ${error as string}`
-      );
+      this.stateStore.logState.alertLog.value = `Delete feed failed: ${
+        error as string
+      }`;
     }
 
     this.sharedState.set(
@@ -267,10 +264,9 @@ export class FeedInteractor {
 
       await this.dbRepository.updateFeedEntities(feedEntityDrafts);
     } catch (error) {
-      this.sharedState.set(
-        "viewState.alertInformation",
-        `Refresh feed failed: ${error as string}`
-      );
+      this.stateStore.logState.alertLog.value = `Refresh feed failed: ${
+        error as string
+      }`;
     }
 
     this.sharedState.set(
@@ -280,10 +276,7 @@ export class FeedInteractor {
   }
 
   async routineRefresh() {
-    this.sharedState.set(
-      "viewState.processInformation",
-      "Routine feed refreshing..."
-    );
+    this.stateStore.logState.processLog.value = "Routine feed refreshing...";
     this.preference.set("lastFeedRefreshTime", Math.round(Date.now() / 1000));
     const feeds = await this.dbRepository.feeds(null, "name", "desc");
     for (const feed of feeds) {

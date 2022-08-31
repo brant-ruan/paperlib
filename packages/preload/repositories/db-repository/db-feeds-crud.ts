@@ -109,11 +109,10 @@ export async function feedEntities(
     try {
       feeds = objects.filtered(filterPattern).toJSON() as FeedEntity[];
     } catch (error) {
-      console.log(error);
-      this.sharedState.set(
-        "viewState.alertInformation",
-        `Feed filter pattern is invalid: ${error as string}`
-      );
+      this.stateStore.logState.alertLog.value = `Feed filter pattern is invalid: ${
+        error as string
+      }`;
+
       feeds = objects.toJSON() as FeedEntity[];
     }
     feeds = feeds.map((feed) => {
@@ -196,10 +195,9 @@ export async function deleteOutdatedFeedEntities(this: DBRepository) {
       realm.delete(unreadObjects);
     });
   } catch (error) {
-    this.sharedState.set(
-      "viewState.alertInformation",
-      `Error deleting feed entities: ${error as string}`
-    );
+    this.stateStore.logState.alertLog.value = `Error deleting feed entities: ${
+      error as string
+    }`;
   }
 }
 

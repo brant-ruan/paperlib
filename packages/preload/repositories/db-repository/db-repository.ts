@@ -2,6 +2,7 @@ import Realm from "realm";
 
 import { Preference } from "../../utils/preference";
 import { SharedState } from "../../utils/appstate";
+import { PreloadStateStore } from "../../../state/appstate";
 
 import {
   getCloudConfig,
@@ -40,6 +41,7 @@ import { migrateLocaltoCloud } from "./db-migration";
 
 export class DBRepository {
   sharedState: SharedState;
+  stateStore: PreloadStateStore;
   preference: Preference;
 
   _realm: Realm | null;
@@ -56,8 +58,13 @@ export class DBRepository {
   feedsListenerInited: boolean;
   feedEntitiesListenerInited: boolean;
 
-  constructor(sharedState: SharedState, preference: Preference) {
+  constructor(
+    sharedState: SharedState,
+    stateStore: PreloadStateStore,
+    preference: Preference
+  ) {
     this.sharedState = sharedState;
+    this.stateStore = stateStore;
     this.preference = preference;
 
     this._realm = null;

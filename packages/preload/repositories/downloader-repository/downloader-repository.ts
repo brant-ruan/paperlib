@@ -7,15 +7,22 @@ import { CustomDownloader } from "./downloader/custom";
 import { Preference, DownloaderPreference } from "../../utils/preference";
 import { PaperEntityDraft } from "../../models/PaperEntityDraft";
 import { SharedState } from "../../utils/appstate";
+import { PreloadStateStore } from "../../../state/appstate";
 
 export class DownloaderRepository {
   sharedState: SharedState;
+  stateStore: PreloadStateStore;
   preference: Preference;
 
   downloaderList: Array<{ name: string; downloader: DownloaderType }>;
 
-  constructor(sharedState: SharedState, preference: Preference) {
+  constructor(
+    sharedState: SharedState,
+    stateStore: PreloadStateStore,
+    preference: Preference
+  ) {
     this.sharedState = sharedState;
+    this.stateStore = stateStore;
     this.preference = preference;
 
     this.downloaderList = [];
@@ -36,24 +43,28 @@ export class DownloaderRepository {
         case "arxiv":
           downloaderInstance = new ArXivDownloader(
             this.sharedState,
+            this.stateStore,
             this.preference
           );
           break;
         case "x-hub":
           downloaderInstance = new XHubDownloader(
             this.sharedState,
+            this.stateStore,
             this.preference
           );
           break;
         case "unpaywall":
           downloaderInstance = new UnpayWallDownloader(
             this.sharedState,
+            this.stateStore,
             this.preference
           );
           break;
         default:
           downloaderInstance = new CustomDownloader(
             this.sharedState,
+            this.stateStore,
             this.preference,
             downloader.name
           );
@@ -84,10 +95,9 @@ export class DownloaderRepository {
         }
       } catch (error) {
         console.log(error);
-        this.sharedState.set(
-          "viewState.alertInformation",
-          `${downloader.name} error: ${error as string}`
-        );
+        this.stateStore.logState.alertLog.value = `${downloader.name} error: ${
+          error as string
+        }`;
       }
     }
     return entityDraft;

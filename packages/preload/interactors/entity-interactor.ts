@@ -1,9 +1,10 @@
-import { clipboard, ipcRenderer } from "electron";
+import { clipboard } from "electron";
 import path from "path";
 import { ToadScheduler, SimpleIntervalJob, Task } from "toad-scheduler";
 import { readFileSync } from "fs";
 
 import { SharedState } from "../utils/appstate";
+import { PreloadStateStore } from "../../state/appstate";
 import { Preference } from "../utils/preference";
 import { bibtex2entityDraft, bibtex2json } from "../utils/bibtex";
 
@@ -19,6 +20,7 @@ import { PaperEntityDraft } from "../models/PaperEntityDraft";
 
 export class EntityInteractor {
   sharedState: SharedState;
+  stateStore: PreloadStateStore;
   preference: Preference;
 
   dbRepository: DBRepository;
@@ -32,6 +34,7 @@ export class EntityInteractor {
 
   constructor(
     sharedState: SharedState,
+    stateStore: PreloadStateStore,
     preference: Preference,
     dbRepository: DBRepository,
     fileRepository: FileRepository,
@@ -41,6 +44,7 @@ export class EntityInteractor {
     downloaderRepository: DownloaderRepository
   ) {
     this.sharedState = sharedState;
+    this.stateStore = stateStore;
     this.preference = preference;
 
     this.dbRepository = dbRepository;
@@ -162,10 +166,9 @@ export class EntityInteractor {
         )
       );
     } catch (error) {
-      this.sharedState.set(
-        "viewState.alertInformation",
-        `Add paper to library failed: ${error as string}`
-      );
+      this.stateStore.logState.alertLog.value = `Add paper to library failed: ${
+        error as string
+      }`;
     }
 
     this.sharedState.set(
@@ -234,10 +237,9 @@ export class EntityInteractor {
 
       await this.dbRepository.update(successfulEntityDrafts);
     } catch (error) {
-      this.sharedState.set(
-        "viewState.alertInformation",
-        `Add categorizer failed: ${error as string}`
-      );
+      this.stateStore.logState.alertLog.value = `Add to categorizer failed: ${
+        error as string
+      }`;
     }
 
     this.sharedState.set(
@@ -273,10 +275,9 @@ export class EntityInteractor {
       );
       void this.cacheRepository.remove(ids);
     } catch (error) {
-      this.sharedState.set(
-        "viewState.alertInformation",
-        `Delete paper failed: ${error as string}`
-      );
+      this.stateStore.logState.alertLog.value = `Delete paper failed: ${
+        error as string
+      }`;
     }
   }
 
@@ -294,10 +295,9 @@ export class EntityInteractor {
       );
       void this.dbRepository.update([entity]);
     } catch (error) {
-      this.sharedState.set(
-        "viewState.alertInformation",
-        `Delete supplementary failed: ${error as string}`
-      );
+      this.stateStore.logState.alertLog.value = `Delete supplementary failed: ${
+        error as string
+      }`;
     }
   }
 
@@ -394,10 +394,9 @@ export class EntityInteractor {
 
       await updatePromise(entityDrafts);
     } catch (error) {
-      this.sharedState.set(
-        "viewState.alertInformation",
-        `Update paper failed: ${error as string}`
-      );
+      this.stateStore.logState.alertLog.value = `Update paper failed: ${
+        error as string
+      }`;
     }
 
     this.sharedState.set(
@@ -449,10 +448,9 @@ export class EntityInteractor {
       });
       await this.dbRepository.update(entityDrafts);
     } catch (error) {
-      this.sharedState.set(
-        "viewState.alertInformation",
-        `Update paper failed: ${error as string}`
-      );
+      this.stateStore.logState.alertLog.value = `Update paper failed: ${
+        error as string
+      }`;
     }
 
     this.sharedState.set(
@@ -551,10 +549,7 @@ export class EntityInteractor {
       "allowRoutineMatch"
     ) as boolean;
     if (allowRoutineMatch) {
-      this.sharedState.set(
-        "viewState.processInformation",
-        "Start routine scraping..."
-      );
+      this.stateStore.logState.processLog.value = "Start routine scraping...";
       this.preference.set("lastRematchTime", Math.round(Date.now() / 1000));
       const entities = await this.dbRepository.preprintEntities();
       void this.scrape(JSON.stringify(entities));
@@ -609,10 +604,9 @@ export class EntityInteractor {
 
       this.update(JSON.stringify(entityDrafts));
     } catch (error) {
-      this.sharedState.set(
-        "viewState.alertInformation",
-        `Download paper failed: ${error as string}`
-      );
+      this.stateStore.logState.alertLog.value = `Download paper failed: ${
+        error as string
+      }`;
     }
 
     this.sharedState.set(

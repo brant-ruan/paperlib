@@ -7,6 +7,7 @@ import { SharedState } from "../../../utils/appstate";
 import { safeGot } from "../../../utils/got";
 import { PaperEntityDraft } from "../../../models/PaperEntityDraft";
 import { bibtex2entityDraft, bibtex2json } from "../../../utils/bibtex";
+import { PreloadStateStore } from "../../../../state/appstate";
 
 async function scrapeImpl(
   this: ScraperType,
@@ -98,8 +99,12 @@ async function scrapeImpl(
 }
 
 export class GoogleScholarScraper extends Scraper {
-  constructor(sharedState: SharedState, preference: Preference) {
-    super(sharedState, preference);
+  constructor(
+    sharedState: SharedState,
+    stateStore: PreloadStateStore,
+    preference: Preference
+  ) {
+    super(sharedState, stateStore, preference);
   }
 
   preProcess(entityDraft: PaperEntityDraft): ScraperRequestType {
@@ -120,10 +125,7 @@ export class GoogleScholarScraper extends Scraper {
     };
 
     if (enable) {
-      this.sharedState.set(
-        "viewState.processInformation",
-        `Scraping metadata from google scholar ...`
-      );
+      this.stateStore.logState.processLog.value = `Scraping metadata from google scholar ...`;
     }
 
     return { scrapeURL, headers, enable };

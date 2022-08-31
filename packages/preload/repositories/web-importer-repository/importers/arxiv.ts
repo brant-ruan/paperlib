@@ -1,15 +1,20 @@
 import { WebContentType, WebImporter } from "./importer";
 import { SharedState } from "../../../utils/appstate";
+import { PreloadStateStore } from "../../../../state/appstate";
 import { Preference } from "../../../utils/preference";
 import { PaperEntityDraft } from "../../../models/PaperEntityDraft";
 import { downloadPDFs } from "../../../utils/got";
 
 export class ArXivWebImporter extends WebImporter {
-  constructor(sharedState: SharedState, preference: Preference) {
+  constructor(
+    sharedState: SharedState,
+    stateStore: PreloadStateStore,
+    preference: Preference
+  ) {
     const urlRegExp = new RegExp(
       "^https?://([^\\.]+\\.)?(arxiv\\.org|xxx\\.lanl\\.gov)/(/\\w|abs/|pdf/)"
     );
-    super(sharedState, preference, urlRegExp);
+    super(sharedState, stateStore, preference, urlRegExp);
   }
 
   async parsingProcess(
@@ -22,7 +27,7 @@ export class ArXivWebImporter extends WebImporter {
       entityDraft = new PaperEntityDraft(true);
       const downloadURL = `https://arxiv.org/pdf/${arXivID}.pdf`;
 
-      this.sharedState.set("viewState.processInformation", `Downloading...`);
+      this.stateStore.logState.processLog.value = `Downloading...`;
       const downloadedFilePath = await downloadPDFs([downloadURL]);
 
       entityDraft.setValue("arxiv", arXivID);

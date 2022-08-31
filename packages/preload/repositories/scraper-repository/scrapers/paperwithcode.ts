@@ -24,10 +24,7 @@ export class PwCScraper extends Scraper {
     };
 
     if (enable) {
-      this.sharedState.set(
-        "viewState.processInformation",
-        `Scraping code from paperswithcode.com ...`
-      );
+      this.stateStore.logState.processLog.value = `Scraping code from paperswithcode.com ...`;
     }
 
     return { scrapeURL, headers, enable };

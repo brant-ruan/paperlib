@@ -18,10 +18,9 @@ export function initCache(this: CacheRepository, reinit = false) {
   try {
     this._realm = new Realm(this.config as Realm.Configuration);
   } catch (err) {
-    this.sharedState.set(
-      "viewState.alertInformation",
-      `Open cache database faild: ${err as string}`
-    );
+    this.stateStore.logState.alertLog.value = `Open cache database faild: ${
+      err as string
+    }`;
   }
 }
 

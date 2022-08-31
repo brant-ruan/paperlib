@@ -21,10 +21,7 @@ export async function initRealm(this: DBRepository, reinit = false) {
     "viewState.processingQueueCount",
     (this.sharedState.viewState.processingQueueCount.value as number) + 1
   );
-  this.sharedState.set(
-    "viewState.processInformation",
-    "Initialize database..."
-  );
+  this.stateStore.logState.processLog.value = "Initialize database...";
 
   if (this._realm || reinit) {
     if (this._realm) {
@@ -63,17 +60,15 @@ export async function initRealm(this: DBRepository, reinit = false) {
             this.syncSession = this._realm.syncSession;
           } catch (err) {
             console.log(err);
-            this.sharedState.set(
-              "viewState.alertInformation",
-              `Open cloud database faild: ${err as string}`
-            );
+            this.stateStore.logState.alertLog.value = `Open cloud database faild: ${
+              err as string
+            }`;
           }
         }
       } else {
-        this.sharedState.set(
-          "viewState.alertInformation",
-          `Open cloud database faild: ${err as string}`
-        );
+        this.stateStore.logState.alertLog.value = `Open cloud database faild: ${
+          err as string
+        }`;
       }
     }
   } else {
@@ -81,10 +76,9 @@ export async function initRealm(this: DBRepository, reinit = false) {
       this._realm = new Realm(this.localConfig as Realm.Configuration);
     } catch (err) {
       console.log(err);
-      this.sharedState.set(
-        "viewState.alertInformation",
-        `Open local database faild: ${err as string}`
-      );
+      this.stateStore.logState.alertLog.value = `Open local database faild: ${
+        err as string
+      }`;
     }
   }
   this.sharedState.set(
@@ -208,19 +202,19 @@ export async function loginCloud(
     );
 
     const loginedUser = await this.app.logIn(credentials);
-    this.sharedState.set(
-      "viewState.processInformation",
-      "Successfully logged in! Data is syncing..."
-    );
+
+    this.stateStore.logState.processLog.value =
+      "Successfully logged in! Data is syncing...";
+
     this.app.switchUser(loginedUser);
     return this.app.currentUser;
   } catch (error) {
     this.preference.set("useSync", false);
     this.sharedState.set("viewState.preferenceUpdated", Date.now());
-    this.sharedState.set(
-      "viewState.alertInformation",
-      `Login failed, ${error as string}`
-    );
+    this.stateStore.logState.alertLog.value = `Login failed, ${
+      error as string
+    }`;
+
     return null;
   }
 }

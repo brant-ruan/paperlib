@@ -5,13 +5,18 @@ import { Scraper, ScraperRequestType } from "./scraper";
 import { formatString } from "../../../utils/string";
 import { Preference } from "../../../utils/preference";
 import { SharedState } from "../../../utils/appstate";
+import { PreloadStateStore } from "../../../../state/appstate";
 import { PaperEntityDraft } from "../../../models/PaperEntityDraft";
 
 export class ArXivScraper extends Scraper {
   xmlParser: XMLParser;
 
-  constructor(sharedState: SharedState, preference: Preference) {
-    super(sharedState, preference);
+  constructor(
+    sharedState: SharedState,
+    stateStore: PreloadStateStore,
+    preference: Preference
+  ) {
+    super(sharedState, stateStore, preference);
     this.xmlParser = new XMLParser();
   }
 
@@ -29,10 +34,7 @@ export class ArXivScraper extends Scraper {
     };
 
     if (enable) {
-      this.sharedState.set(
-        "viewState.processInformation",
-        `Scraping metadata from arXiv.org ...`
-      );
+      this.stateStore.logState.processLog.value = `Scraping metadata from arXiv.org ...`;
     }
 
     return { scrapeURL, headers, enable };

@@ -18,10 +18,7 @@ export class DOIScraper extends Scraper {
     };
 
     if (enable) {
-      this.sharedState.set(
-        "viewState.processInformation",
-        "Scraping metadata by DOI..."
-      );
+      this.stateStore.logState.processLog.value = "Scraping metadata by DOI...";
     }
 
     return { scrapeURL, headers, enable };

@@ -4,6 +4,7 @@ import { Scraper, ScraperRequestType } from "./scraper";
 import { formatString } from "../../../utils/string";
 import { Preference } from "../../../utils/preference";
 import { SharedState } from "../../../utils/appstate";
+import { PreloadStateStore } from "../../../../state/appstate";
 import { PaperEntityDraft } from "../../../models/PaperEntityDraft";
 
 function parsingProcess(
@@ -130,10 +131,7 @@ export class DBLPScraper extends Scraper {
     const headers = {};
 
     if (enable) {
-      this.sharedState.set(
-        "viewState.processInformation",
-        `Scraping metadata from dblp.com ...`
-      );
+      this.stateStore.logState.processLog.value = `Scraping metadata from dblp.com ...`;
     }
 
     return { scrapeURL, headers, enable };
@@ -147,10 +145,11 @@ export class DBLPbyTimeScraper extends Scraper {
 
   constructor(
     sharedState: SharedState,
+    stateStore: PreloadStateStore,
     preference: Preference,
     offset: number
   ) {
-    super(sharedState, preference);
+    super(sharedState, stateStore, preference);
     this.offset = offset;
   }
 
@@ -215,11 +214,7 @@ export class DBLPVenueScraper extends Scraper {
       const hits = response.result.hits.hit;
       for (const hit of hits) {
         const venueInfo = hit["info"];
-        if (
-          venueInfo["url"].includes(
-            venueID
-          )
-        ) {
+        if (venueInfo["url"].includes(venueID)) {
           const venue = venueInfo["venue"];
           entityDraft.setValue("publication", venue);
           break;

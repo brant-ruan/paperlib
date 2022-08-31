@@ -108,10 +108,9 @@ export async function entities(
       entities = objects.filtered(filterPattern).toJSON() as PaperEntity[];
     } catch (error) {
       console.log(error);
-      this.sharedState.set(
-        "viewState.alertInformation",
-        `Filter pattern is invalid: ${error as string}`
-      );
+      this.stateStore.logState.alertLog.value = `Filter pattern is invalid: ${
+        error as string
+      }`;
       entities = objects.toJSON() as PaperEntity[];
     }
     entities = entities.map((entity) => {
@@ -215,10 +214,9 @@ export async function remove(this: DBRepository, ids: string[]) {
     });
     return removeFileURLs;
   } catch (error) {
-    this.sharedState.set(
-      "viewState.alertInformation",
-      `Error deleting entities: ${error as string}`
-    );
+    this.stateStore.logState.alertLog.value = `Error deleting entities: ${
+      error as string
+    }`;
     return [];
   }
 }
@@ -294,10 +292,7 @@ export async function renameCategorizer(
     ) as Results<PaperCategorizer>;
 
   if (existingObjects.length > 0) {
-    this.sharedState.set(
-      "viewState.alertInformation",
-      `Categorizer ${newCategorizerNameStr} already exists`
-    );
+    this.stateStore.logState.alertLog.value = `Categorizer ${newCategorizerNameStr} already exists`;
     return false;
   }
 
@@ -315,10 +310,9 @@ export async function renameCategorizer(
     });
     return true;
   } catch (error) {
-    this.sharedState.set(
-      "viewState.alertInformation",
-      `Error renaming categorizer: ${error as string}`
-    );
+    this.stateStore.logState.alertLog.value = `Error renaming categorizer: ${
+      error as string
+    }`;
     return false;
   }
 }

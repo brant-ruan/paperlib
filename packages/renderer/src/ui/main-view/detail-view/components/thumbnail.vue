@@ -63,6 +63,7 @@ const onCloudDownloadClicked = async () => {
   const fileURL = await window.appInteractor.access(props.url, true);
   isRendering.value = false;
   if (fileURL === "") {
+    // TODO: show error message
     window.appInteractor.setState(
       "viewState.alertInformation",
       `File ${props.url} download faield.`

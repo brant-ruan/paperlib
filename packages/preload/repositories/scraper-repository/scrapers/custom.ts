@@ -2,14 +2,20 @@ import got, { Response } from "got";
 
 import { Preference, ScraperPreference } from "../../../utils/preference";
 import { SharedState } from "../../../utils/appstate";
+import { PreloadStateStore } from "../../../../state/appstate";
 import { Scraper, ScraperRequestType, ScraperType } from "./scraper";
 import { PaperEntityDraft } from "../../../models/PaperEntityDraft";
 
 export class CustomScraper extends Scraper {
   name = "";
 
-  constructor(sharedState: SharedState, preference: Preference, name: string) {
-    super(sharedState, preference);
+  constructor(
+    sharedState: SharedState,
+    stateStore: PreloadStateStore,
+    preference: Preference,
+    name: string
+  ) {
+    super(sharedState, stateStore, preference);
 
     this.name = name;
   }
@@ -29,10 +35,7 @@ export class CustomScraper extends Scraper {
     }
 
     if (enable) {
-      this.sharedState.set(
-        "viewState.processInformation",
-        `Scraping metadata from ${this.name}...`
-      );
+      this.stateStore.logState.processLog.value = `Scraping metadata from ${this.name}...`;
     }
 
     return { scrapeURL, headers, enable };

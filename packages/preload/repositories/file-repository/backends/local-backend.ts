@@ -4,16 +4,23 @@ import { promises as fsPromise, existsSync } from "fs";
 import { PaperEntityDraft } from "../../../models/PaperEntityDraft";
 
 import { SharedState } from "../../../utils/appstate";
+import { PreloadStateStore } from "../../../../state/appstate";
 import { Preference } from "../../../utils/preference";
 import { FileBackend } from "./backend";
 import { constructFileURL } from "../../../utils/path";
 
 export class LocalFileBackend implements FileBackend {
   sharedState: SharedState;
+  stateStore: PreloadStateStore;
   preference: Preference;
 
-  constructor(sharedState: SharedState, preference: Preference) {
+  constructor(
+    sharedState: SharedState,
+    stateStore: PreloadStateStore,
+    preference: Preference
+  ) {
     this.sharedState = sharedState;
+    this.stateStore = stateStore;
     this.preference = preference;
 
     void this.check();
@@ -69,10 +76,9 @@ export class LocalFileBackend implements FileBackend {
       }
       return true;
     } catch (error) {
-      this.sharedState.set(
-        "viewState.alertInformation",
-        `Could not copy file: ${error as string}`
-      );
+      this.stateStore.logState.alertLog.value = `Could not copy file: ${
+        error as string
+      }`;
       return false;
     }
   }
@@ -219,10 +225,9 @@ export class LocalFileBackend implements FileBackend {
       await fsPromise.unlink(_sourceURL);
       return true;
     } catch (error) {
-      this.sharedState.set(
-        "viewState.alertInformation",
-        `Could not remove file: ${error as string}`
-      );
+      this.stateStore.logState.alertLog.value = `Could not remove file: ${
+        error as string
+      }`;
       return false;
     }
   }
@@ -268,10 +273,9 @@ export class LocalFileBackend implements FileBackend {
       }
       return true;
     } catch (error) {
-      this.sharedState.set(
-        "viewState.alertInformation",
-        `Could not remove file: ${error as string}`
-      );
+      this.stateStore.logState.alertLog.value = `Could not remove file: ${
+        error as string
+      }`;
       return false;
     }
   }

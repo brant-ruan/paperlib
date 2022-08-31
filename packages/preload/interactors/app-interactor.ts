@@ -14,10 +14,11 @@ import { ScraperRepository } from "../repositories/scraper-repository/scraper-re
 
 import { SharedState } from "../utils/appstate";
 import { Preference } from "../utils/preference";
-import { string } from "yargs";
+import { PreloadStateStore } from "../../state/appstate";
 
 export class AppInteractor {
   sharedState: SharedState;
+  stateStore: PreloadStateStore;
   preference: Preference;
 
   dbRepository: DBRepository;
@@ -29,6 +30,7 @@ export class AppInteractor {
 
   constructor(
     sharedState: SharedState,
+    stateStore: PreloadStateStore,
     preference: Preference,
     dbRepository: DBRepository,
     fileRepository: FileRepository,
@@ -36,6 +38,7 @@ export class AppInteractor {
     downloaderRepository: DownloaderRepository
   ) {
     this.sharedState = sharedState;
+    this.stateStore = stateStore;
     this.preference = preference;
 
     this.dbRepository = dbRepository;
@@ -73,6 +76,10 @@ export class AppInteractor {
   // State Operation
   getState(dest: string) {
     return this.sharedState.get(dest).get();
+  }
+
+  setStateStore(key: string, value: any, publish = true) {
+    this.stateStore.set(key, value, publish);
   }
 
   setState(dest: string, value: number | string | boolean, publish = true) {

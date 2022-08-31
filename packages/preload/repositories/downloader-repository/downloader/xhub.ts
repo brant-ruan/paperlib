@@ -40,10 +40,7 @@ export class XHubDownloader extends Downloader {
     }
 
     if (enable) {
-      this.sharedState.set(
-        "viewState.processInformation",
-        `Downloading PDF from X-hub ...`
-      );
+      this.stateStore.logState.processLog.value = `Downloading PDF from X-hub ...`;
     }
 
     return { queryUrl, headers, enable };

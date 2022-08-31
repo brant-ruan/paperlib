@@ -3,6 +3,7 @@ import { HttpProxyAgent, HttpsProxyAgent } from "hpagent";
 import { PaperEntityDraft } from "../../../models/PaperEntityDraft";
 import { Preference, DownloaderPreference } from "../../../utils/preference";
 import { SharedState } from "../../../utils/appstate";
+import { PreloadStateStore } from "../../../../state/appstate";
 import { downloadPDFs } from "../../../utils/got";
 
 export interface DownloaderRequestType {
@@ -13,6 +14,7 @@ export interface DownloaderRequestType {
 
 export interface DownloaderType {
   sharedState: SharedState;
+  stateStore: PreloadStateStore;
   preference: Preference;
   download(entityDraft: PaperEntityDraft): Promise<PaperEntityDraft | null>;
   preProcess(entityDraft: PaperEntityDraft): DownloaderRequestType | void;
@@ -28,10 +30,16 @@ export interface DownloaderType {
 
 export class Downloader implements DownloaderType {
   sharedState: SharedState;
+  stateStore: PreloadStateStore;
   preference: Preference;
 
-  constructor(sharedState: SharedState, preference: Preference) {
+  constructor(
+    sharedState: SharedState,
+    stateStore: PreloadStateStore,
+    preference: Preference
+  ) {
     this.sharedState = sharedState;
+    this.stateStore = stateStore;
     this.preference = preference;
   }
 
@@ -115,7 +123,7 @@ async function downloadImpl(
     const agent = this.getProxyAgent();
     const downloadUrl = await this.queryProcess(queryUrl, headers, entityDraft);
     if (downloadUrl) {
-      this.sharedState.set("viewState.processInformation", "Downloading...");
+      this.stateStore.logState.processLog.value = "Downloading...";
       const downloadedUrl = await downloadPDFs([downloadUrl], agent);
 
       if (downloadedUrl.length > 0) {

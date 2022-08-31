@@ -14,10 +14,7 @@ export class ArXivDownloader extends Downloader {
     };
 
     if (enable) {
-      this.sharedState.set(
-        "viewState.processInformation",
-        `Downloading PDF from ArXiv ...`
-      );
+      this.stateStore.logState.processLog.value = `Downloading PDF from ArXiv ...`;
     }
 
     return { queryUrl, headers, enable };

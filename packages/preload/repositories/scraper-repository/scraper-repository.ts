@@ -19,15 +19,22 @@ import { CustomScraper } from "./scrapers/custom";
 import { Preference, ScraperPreference } from "../../utils/preference";
 import { PaperEntityDraft } from "../../models/PaperEntityDraft";
 import { SharedState } from "../../utils/appstate";
+import { PreloadStateStore } from "../../../state/appstate";
 
 export class ScraperRepository {
   sharedState: SharedState;
+  stateStore: PreloadStateStore;
   preference: Preference;
 
   scraperList: Array<{ name: string; scraper: ScraperType }>;
 
-  constructor(sharedState: SharedState, preference: Preference) {
+  constructor(
+    sharedState: SharedState,
+    stateStore: PreloadStateStore,
+    preference: Preference
+  ) {
     this.sharedState = sharedState;
+    this.stateStore = stateStore;
     this.preference = preference;
 
     this.scraperList = [];
@@ -46,19 +53,26 @@ export class ScraperRepository {
 
     for (const scraper of scraperPrefs) {
       if (scraper.name === "dblp") {
-        const dblpScraper = new DBLPScraper(this.sharedState, this.preference);
+        const dblpScraper = new DBLPScraper(
+          this.sharedState,
+          this.stateStore,
+          this.preference
+        );
         const dblpByTimeScraper0 = new DBLPbyTimeScraper(
           this.sharedState,
+          this.stateStore,
           this.preference,
           0
         );
         const dblpbyTimeScraper1 = new DBLPbyTimeScraper(
           this.sharedState,
+          this.stateStore,
           this.preference,
           1
         );
         const dblpVenueScraper = new DBLPVenueScraper(
           this.sharedState,
+          this.stateStore,
           this.preference
         );
         this.scraperList.push({
@@ -81,44 +95,65 @@ export class ScraperRepository {
         let scraperInstance: ScraperType | undefined;
         switch (scraper.name) {
           case "pdf":
-            scraperInstance = new PDFScraper(this.sharedState, this.preference);
+            scraperInstance = new PDFScraper(
+              this.sharedState,
+              this.stateStore,
+              this.preference
+            );
             break;
           case "doi":
-            scraperInstance = new DOIScraper(this.sharedState, this.preference);
+            scraperInstance = new DOIScraper(
+              this.sharedState,
+              this.stateStore,
+              this.preference
+            );
             break;
           case "arxiv":
             scraperInstance = new ArXivScraper(
               this.sharedState,
+              this.stateStore,
               this.preference
             );
             break;
           case "ieee":
             scraperInstance = new IEEEScraper(
               this.sharedState,
+              this.stateStore,
               this.preference
             );
             break;
           case "cvf":
-            scraperInstance = new CVFScraper(this.sharedState, this.preference);
+            scraperInstance = new CVFScraper(
+              this.sharedState,
+              this.stateStore,
+              this.preference
+            );
             break;
           case "pwc":
-            scraperInstance = new PwCScraper(this.sharedState, this.preference);
+            scraperInstance = new PwCScraper(
+              this.sharedState,
+              this.stateStore,
+              this.preference
+            );
             break;
           case "openreview":
             scraperInstance = new OpenreviewScraper(
               this.sharedState,
+              this.stateStore,
               this.preference
             );
             break;
           case "googlescholar":
             scraperInstance = new GoogleScholarScraper(
               this.sharedState,
+              this.stateStore,
               this.preference
             );
             break;
           default:
             scraperInstance = new CustomScraper(
               this.sharedState,
+              this.stateStore,
               this.preference,
               scraper.name
             );
@@ -145,10 +180,9 @@ export class ScraperRepository {
         entityDraft = await scraper.scraper.scrape(entityDraft);
       } catch (error) {
         console.log(error);
-        this.sharedState.set(
-          "viewState.alertInformation",
-          `${scraper.name} error: ${error as string}`
-        );
+        this.stateStore.logState.alertLog.value = `${scraper.name} error: ${
+          error as string
+        }`;
       }
     }
     return entityDraft;
@@ -164,10 +198,9 @@ export class ScraperRepository {
           entityDraft = await scraper.scraper.scrape(entityDraft);
         } catch (error) {
           console.log(error);
-          this.sharedState.set(
-            "viewState.alertInformation",
-            `${scraper.name} error: ${error as string}`
-          );
+          this.stateStore.logState.alertLog.value = `${scraper.name} error: ${
+            error as string
+          }`;
         }
       }
     }

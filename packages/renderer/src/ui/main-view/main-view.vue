@@ -5,10 +5,7 @@ import {
   PaperEntity,
   PaperEntityPlaceholder,
 } from "../../../../preload/models/PaperEntity";
-import {
-  FeedEntity,
-  FeedEntityPlaceholder,
-} from "../../../../preload/models/FeedEntity";
+import { FeedEntity } from "../../../../preload/models/FeedEntity";
 import { PaperEntityDraft } from "../../../../preload/models/PaperEntityDraft";
 import { FeedEntityDraft } from "../../../../preload/models/FeedEntityDraft";
 
@@ -19,6 +16,7 @@ import PaperDetailView from "./detail-view/paper-detail-view.vue";
 import FeedDetailView from "./detail-view/feed-detail-view.vue";
 
 import { createModalView } from "../components/modal-view";
+import { RendererStateStore } from "../../../../state/appstate";
 
 const props = defineProps({
   entities: Array as () => PaperEntity[],
@@ -32,6 +30,8 @@ const props = defineProps({
   showMainFolders: Boolean,
   showMainNote: Boolean,
 });
+
+const viewState = RendererStateStore.useViewState();
 
 const contentType = ref("library");
 
@@ -146,10 +146,10 @@ const deleteSelectedEntities = () => {
           JSON.stringify([])
         );
         void window.entityInteractor.delete(ids);
-        window.appInteractor.setState("viewState.isModalShown", false);
+        viewState.isModalShown = false;
       },
       () => {
-        window.appInteractor.setState("viewState.isModalShown", false);
+        viewState.isModalShown = false;
       }
     );
   }

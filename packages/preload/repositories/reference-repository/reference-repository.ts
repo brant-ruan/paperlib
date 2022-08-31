@@ -7,14 +7,21 @@ import { CSL } from "../../models/CSL";
 import { Preference } from "../../utils/preference";
 import { PaperEntityDraft } from "../../models/PaperEntityDraft";
 import { SharedState } from "../../utils/appstate";
+import { PreloadStateStore } from "../../../state/appstate";
 import { formatString } from "../../utils/string";
 
 export class ReferenceRepository {
   sharedState: SharedState;
+  stateStore: PreloadStateStore;
   preference: Preference;
 
-  constructor(sharedState: SharedState, preference: Preference) {
+  constructor(
+    sharedState: SharedState,
+    stateStore: PreloadStateStore,
+    preference: Preference
+  ) {
     this.sharedState = sharedState;
+    this.stateStore = stateStore;
     this.preference = preference;
 
     this.setCitePlugin();
@@ -153,10 +160,7 @@ export class ReferenceRepository {
 
         return cite.format("bibliography", { template: csl });
       } else {
-        this.sharedState.set(
-          "viewState.alertInformation",
-          `CSL template file: ${csl}.csl not found.`
-        );
+        this.stateStore.logState.alertLog.value = `CSL template file: ${csl}.csl not found.`;
         return cite.format("bibliography", { template: "apa" });
       }
     }

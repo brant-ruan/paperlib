@@ -23,10 +23,7 @@ export class CVFScraper extends Scraper {
     const headers = {};
 
     if (enable) {
-      this.sharedState.set(
-        "viewState.processInformation",
-        `Scraping metadata from the CVF...`
-      );
+      this.stateStore.logState.processLog.value = `Scraping metadata from the CVF...`;
     }
 
     return { scrapeURL, headers, enable };

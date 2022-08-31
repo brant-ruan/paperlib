@@ -123,9 +123,8 @@ export async function migrateLocaltoCloud(this: DBRepository) {
     await this.update(entityDraftsWithoutCategorizer);
     await this.update(entityDraftsWithCategorizer);
   } catch (error) {
-    this.sharedState.set(
-      "viewState.alertInformation",
-      `Migrate local to sync faild: ${error as string}`
-    );
+    this.stateStore.logState.alertLog.value = `Migrate local to sync faild: ${
+      error as string
+    }`;
   }
 }

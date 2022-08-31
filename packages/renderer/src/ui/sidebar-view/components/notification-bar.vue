@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { Ref, ref } from "vue";
+import { Ref, ref, watch } from "vue";
 import {
   BIconArrowBarUp,
   BIconExclamationTriangle,
   BIconInfoCircle,
 } from "bootstrap-icons-vue";
+import { RendererStateStore } from "../../../../../state/appstate";
 
-const processInformation = ref("Notification...");
+const logState = RendererStateStore.useLogState();
+
 const isShown = ref(false);
 const isHistoryShown = ref(false);
 const historyMsgs = ref([]) as Ref<Array<Record<string, string | boolean>>>;
@@ -37,26 +39,27 @@ const pushToHistory = (type: string, msg: string) => {
   }
 };
 
-window.appInteractor.registerState("viewState.processInformation", (value) => {
-  processInformation.value = value as string;
-  pushToHistory("info", value as string);
-});
+watch(
+  () => logState.processLog,
+  (value) => {
+    pushToHistory("info", value);
+  }
+);
 
-window.appInteractor.registerState("viewState.infoInformation", (value) => {
-  pushToHistory("info", value as string);
-});
-
-window.appInteractor.registerState("viewState.alertInformation", (value) => {
-  pushToHistory("warning", value as string);
-  isHistoryShown.value = true;
-  debounce(() => {
-    isHistoryShown.value = false;
-    historyMsgs.value = historyMsgs.value.map((msg) => {
-      msg.forceShow = false;
-      return msg;
-    });
-  }, 3000)();
-});
+watch(
+  () => logState.alertLog,
+  (value) => {
+    pushToHistory("warning", value as string);
+    isHistoryShown.value = true;
+    debounce(() => {
+      isHistoryShown.value = false;
+      historyMsgs.value = historyMsgs.value.map((msg) => {
+        msg.forceShow = false;
+        return msg;
+      });
+    }, 3000)();
+  }
+);
 
 const timeoutID = ref();
 const debounce = (fn: Function, delay: number) => {
@@ -140,7 +143,7 @@ const onLeave = () => {
       class="flex justify-center my-auto w-5/6 h-8 truncate text-center text-xxs text-neutral-500 peer"
       @click="onClicked"
     >
-      <span class="my-auto" v-show="isShown">{{ processInformation }}</span>
+      <span class="my-auto" v-show="isShown"> {{ logState.processLog }}</span>
     </div>
     <BIconArrowBarUp
       class="text-neutral-500 w-1/12 my-auto text-xs invisible peer-hover:visible"

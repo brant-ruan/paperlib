@@ -56,6 +56,7 @@ export class SharedState {
       realmReinited: new State(`${Date.now()}`),
       storageBackendReinited: new State(`${Date.now()}`),
 
+      // Done
       alertInformation: new State("", false),
       infoInformation: new State("", false),
       processInformation: new State("", false),

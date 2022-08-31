@@ -1,14 +1,10 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { RendererStateStore } from "../../../state/appstate";
 
-const show = ref(false);
-
-window.appInteractor.registerState("viewState.isModalShown", (value) => {
-  show.value = value as boolean;
-});
+const viewState = RendererStateStore.useViewState();
 
 const onClick = () => {
-  window.appInteractor.setState("viewState.isModalShown", false);
+  viewState.isModalShown = false;
 };
 </script>
 
@@ -24,7 +20,7 @@ const onClick = () => {
     <div
       id="modal-view"
       class="absolute w-full h-full top-0 left-0"
-      v-show="show"
+      v-show="viewState.isModalShown"
       @click="onClick"
     ></div>
   </Transition>
