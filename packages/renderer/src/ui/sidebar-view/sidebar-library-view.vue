@@ -92,7 +92,7 @@ const onItemDroped = (
   }
 
   window.entityInteractor.updateWithCategorizer(
-    selectionState.dragedIds as string[],
+    JSON.parse(JSON.stringify(selectionState.dragedIds)) as string[],
     categorizerName,
     categorizerType
   );
