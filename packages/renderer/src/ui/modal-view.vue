@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { RendererStateStore } from "../../../state/appstate";
 
-const viewState = RendererStateStore.useViewState();
 const props = defineProps({
   title: String,
   info: String,
@@ -9,11 +8,12 @@ const props = defineProps({
   okBtn: Boolean,
 });
 
+const viewState = RendererStateStore.useViewState();
+const selectionState = RendererStateStore.useSelectionState();
+
 const onClick = () => {
   viewState.isModalShown = false;
 };
-
-const emit = defineEmits(["confirm", "cancel"]);
 
 const keyDownListener = (e: KeyboardEvent) => {
   e.preventDefault();
@@ -31,7 +31,10 @@ const onCancel = () => {
 };
 
 const onConfirm = () => {
-  emit("confirm");
+  const ids = selectionState.selectedIds;
+  selectionState.selectedIndex = [];
+  void window.entityInteractor.delete(ids as string[]);
+  viewState.isModalShown = false;
 };
 </script>
 

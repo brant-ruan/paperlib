@@ -124,13 +124,6 @@ const reloadFeedEntities = async () => {
   feedEntities.value = results;
 };
 
-const onDeleteSelected = () => {
-  const ids = selectionState.selectedIds;
-  selectionState.selectedIndex = [];
-  void window.entityInteractor.delete(ids as string[]);
-  viewState.isModalShown = false;
-};
-
 // =======================================
 // Preferences
 const reloadPreference = () => {
@@ -360,6 +353,5 @@ onMounted(async () => {
     info="Are you sure to delete?"
     :cancel-btn="true"
     :ok-btn="true"
-    @confirm="onDeleteSelected"
   />
 </template>
