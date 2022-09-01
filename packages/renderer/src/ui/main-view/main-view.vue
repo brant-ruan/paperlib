@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { ref, Ref, defineEmits } from "vue";
+import { ref, Ref, watch } from "vue";
 
 import {
   PaperEntity,
   PaperEntityPlaceholder,
 } from "../../../../preload/models/PaperEntity";
+import { PaperEntityDraft } from "../../../../preload/models/PaperEntityDraft";
 import { FeedEntity } from "../../../../preload/models/FeedEntity";
+import { FeedEntityDraft } from "../../../../preload/models/FeedEntityDraft";
 import WindowMenuBar from "./menubar-view/window-menu-bar.vue";
 import PaperDataView from "./data-view/paper-data-view.vue";
 import FeedDataView from "./data-view/feed-data-view.vue";
@@ -28,15 +30,10 @@ const props = defineProps({
 });
 
 const viewState = RendererStateStore.useViewState();
+const bufferState = RendererStateStore.useBufferState();
+const dbState = RendererStateStore.useDBState();
+const selectionState = RendererStateStore.useSelectionState();
 
-const contentType = ref("library");
-
-const sortBy = ref(window.appInteractor.getState("viewState.sortBy") as string);
-const sortOrder = ref(
-  window.appInteractor.getState("viewState.sortOrder") as string
-);
-
-const selectedIndex: Ref<number[]> = ref([]);
 const selectedEntities: Ref<PaperEntity[]> = ref([]);
 const selectedFeedEntities: Ref<FeedEntity[]> = ref([]);
 
@@ -45,7 +42,7 @@ const feedEntityAddingStatus = ref(0); // 0: not adding, 1: adding, 2: added
 const searchInputFocus = ref(false);
 
 const openSelectedEntities = () => {
-  if (contentType.value === "library") {
+  if (viewState.contentType === "library") {
     selectedEntities.value.forEach((entity) => {
       window.appInteractor.open(entity.mainURL);
     });
@@ -57,7 +54,7 @@ const openSelectedEntities = () => {
 };
 
 const showInFinderSelectedEntities = () => {
-  if (contentType.value === "library") {
+  if (viewState.contentType === "library") {
     selectedEntities.value.forEach((entity) => {
       window.appInteractor.showInFinder(entity.mainURL);
     });
@@ -65,46 +62,41 @@ const showInFinderSelectedEntities = () => {
 };
 
 const previewSelectedEntities = () => {
-  if (contentType.value === "library") {
+  if (viewState.contentType === "library") {
     window.appInteractor.preview(selectedEntities.value[0].mainURL);
   }
 };
 
 const reloadSelectedEntities = () => {
-  let selectedIds;
-  if (contentType.value === "library") {
+  if (viewState.contentType === "library") {
     selectedEntities.value = [];
-    selectedIndex.value.forEach((index) => {
+    selectionState.selectedIndex.forEach((index) => {
       selectedEntities.value.push(props.entities![index]);
     });
-    selectedIds = selectedEntities.value.map((entity) => entity.id);
+    selectionState.selectedIds = selectedEntities.value.map(
+      (entity) => entity.id
+    );
   } else {
     feedEntityAddingStatus.value = 0;
     selectedFeedEntities.value = [];
-    selectedIndex.value.forEach((index) => {
+    selectionState.selectedIndex.forEach((index) => {
       selectedFeedEntities.value.push(props.feedEntities![index]);
     });
-    selectedIds = selectedFeedEntities.value.map((entity) => entity.id);
+    selectionState.selectedIds = selectedFeedEntities.value.map(
+      (entity) => entity.id
+    );
   }
-  window.appInteractor.setState(
-    "selectionState.selectedIds",
-    JSON.stringify(selectedIds)
-  );
 };
 
 const clearSelected = () => {
-  selectedIndex.value = [];
+  selectionState.selectedIndex = [];
+  selectionState.selectedIds = [];
   selectedEntities.value = [];
   selectedFeedEntities.value = [];
-  window.appInteractor.setState(
-    "selectionState.selectedIndex",
-    JSON.stringify(selectedIndex.value)
-  );
-  window.appInteractor.setState("selectionState.selectedIds", "");
 };
 
 const scrapeSelectedEntities = () => {
-  if (contentType.value === "library") {
+  if (viewState.contentType === "library") {
     const entityDrafts = selectedEntities.value.map((entity) => {
       const entityDraft = new PaperEntityDraft();
       entityDraft.initialize(entity);
@@ -115,7 +107,7 @@ const scrapeSelectedEntities = () => {
 };
 
 const scrapeSelectedEntitiesFrom = (scraperName: string) => {
-  if (contentType.value === "library") {
+  if (viewState.contentType === "library") {
     const entityDrafts = selectedEntities.value.map((entity) => {
       const entityDraft = new PaperEntityDraft();
       entityDraft.initialize(entity);
@@ -129,37 +121,35 @@ const scrapeSelectedEntitiesFrom = (scraperName: string) => {
 };
 
 const deleteSelectedEntities = () => {
-  if (contentType.value === "library") {
-    emits("delete");
+  if (viewState.contentType === "library") {
+    viewState.isModalShown = true;
   }
 };
 
 const editSelectedEntities = () => {
-  if (contentType.value === "library") {
+  if (viewState.contentType === "library") {
     const entityDraft = new PaperEntityDraft();
     entityDraft.initialize(selectedEntities.value[0]);
-    window.appInteractor.setState(
-      "sharedData.editEntityDraft",
-      JSON.stringify(entityDraft)
-    );
-    window.appInteractor.setState("viewState.isEditViewShown", true);
+    bufferState.editingEntityDraft = entityDraft;
+    viewState.isEditViewShown = true;
   }
 };
 
 const flagSelectedEntities = () => {
-  if (contentType.value === "library") {
+  if (viewState.contentType === "library") {
     const entityDrafts = selectedEntities.value.map((entity) => {
       const entityDraft = new PaperEntityDraft();
       entityDraft.initialize(entity);
       entityDraft.flag = !entityDraft.flag;
       return entityDraft;
     });
+
     void window.entityInteractor.update(JSON.stringify(entityDrafts));
   }
 };
 
 const exportSelectedEntities = (format: string) => {
-  if (contentType.value === "library") {
+  if (viewState.contentType === "library") {
     window.entityInteractor.export(
       JSON.stringify(selectedEntities.value),
       format
@@ -168,7 +158,7 @@ const exportSelectedEntities = (format: string) => {
 };
 
 const addSelectedFeedEntities = async () => {
-  if (contentType.value === "feed") {
+  if (viewState.contentType === "feed") {
     feedEntityAddingStatus.value = 1;
     const feedEntityDrafts = selectedFeedEntities.value.map((entity) => {
       const feedEntityDraft = new FeedEntityDraft();
@@ -183,7 +173,7 @@ const addSelectedFeedEntities = async () => {
 };
 
 const readSelectedFeedEntities = (read: boolean | null, clear = false) => {
-  if (contentType.value === "feed") {
+  if (viewState.contentType === "feed") {
     const feedEntityDrafts = selectedFeedEntities.value
       .map((feedEntity) => {
         const feedEntityDraft = new FeedEntityDraft();
@@ -206,17 +196,17 @@ const readSelectedFeedEntities = (read: boolean | null, clear = false) => {
 };
 
 const switchViewType = (viewType: string) => {
-  window.appInteractor.setState("viewState.viewType", viewType);
+  viewState.viewType = viewType;
   window.appInteractor.updatePreference("mainviewType", viewType);
 };
 
 const switchSortBy = (key: string) => {
-  window.appInteractor.setState("viewState.sortBy", key);
+  viewState.sortBy = key;
   window.appInteractor.updatePreference("mainviewSortBy", key);
 };
 
 const switchSortOrder = (order: string) => {
-  window.appInteractor.setState("viewState.sortOrder", order);
+  viewState.sortOrder = order;
   window.appInteractor.updatePreference("mainviewSortOrder", order);
 };
 
@@ -252,7 +242,7 @@ const onMenuButtonClicked = (command: string) => {
       switchSortOrder(command.replaceAll("sort-order-", ""));
       break;
     case "preference":
-      window.appInteractor.setState("viewState.isPreferenceViewShown", true);
+      viewState.isPreferenceViewShown = true;
       break;
   }
 };
@@ -326,7 +316,7 @@ window.appInteractor.registerMainSignal("feed-data-context-menu-read", () => {
 // ========================================================
 // Register Shortcut
 window.appInteractor.registerMainSignal("shortcut-Preference", () => {
-  window.appInteractor.setState("viewState.isPreferenceViewShown", true);
+  viewState.isPreferenceViewShown = true;
 });
 
 window.appInteractor.registerMainSignal("shortcut-Enter", () => {
@@ -334,9 +324,9 @@ window.appInteractor.registerMainSignal("shortcut-Enter", () => {
     !searchInputFocus.value &&
     (selectedEntities.value.length >= 1 ||
       selectedFeedEntities.value.length >= 1) &&
-    !window.appInteractor.getState("viewState.isModalShown") &&
-    !window.appInteractor.getState("viewState.isEditViewShown") &&
-    !window.appInteractor.getState("viewState.isPreferenceViewShown")
+    !viewState.isModalShown &&
+    !viewState.isEditViewShown &&
+    !viewState.isPreferenceViewShown
   ) {
     openSelectedEntities();
   }
@@ -346,14 +336,53 @@ window.appInteractor.registerMainSignal("shortcut-Space", () => {
   if (
     !searchInputFocus.value &&
     selectedEntities.value.length >= 1 &&
-    !window.appInteractor.getState("viewState.isModalShown") &&
-    !window.appInteractor.getState("viewState.isEditViewShown") &&
-    !window.appInteractor.getState("viewState.isPreferenceViewShown")
+    !viewState.isModalShown &&
+    !viewState.isEditViewShown &&
+    !viewState.isPreferenceViewShown
   ) {
     previewSelectedEntities();
   }
 });
-function preventSpaceArrowScrollEvent(event: KeyboardEvent) {
+
+const onArrowDownPressed = () => {
+  const currentIndex = selectionState.selectedIndex[0] || 0;
+  const maxN =
+    (viewState.contentType === "library"
+      ? viewState.entitiesCount
+      : viewState.feedEntitiesCount) - 1;
+
+  let offset = 0;
+  if (currentIndex + 1 > maxN) {
+    offset = 0;
+  } else {
+    offset = 1;
+  }
+
+  if (!viewState.isEditViewShown && !viewState.isPreferenceViewShown) {
+    selectionState.selectedIndex = [currentIndex + offset];
+  }
+};
+
+const onArrowUpPressed = () => {
+  const currentIndex = selectionState.selectedIndex[0] || 0;
+  const maxN =
+    (viewState.contentType === "library"
+      ? viewState.entitiesCount
+      : viewState.feedEntitiesCount) - 1;
+
+  let offset = 0;
+  if (currentIndex - 1 < 0) {
+    offset = 0;
+  } else {
+    offset = -1;
+  }
+
+  if (!viewState.isEditViewShown && !viewState.isPreferenceViewShown) {
+    selectionState.selectedIndex = [currentIndex + offset];
+  }
+};
+
+const preventSpaceArrowScrollEvent = (event: KeyboardEvent) => {
   if (
     event.code === "Space" ||
     event.code === "ArrowDown" ||
@@ -370,37 +399,19 @@ function preventSpaceArrowScrollEvent(event: KeyboardEvent) {
     }
 
     if (event.code === "ArrowDown") {
-      const currentIndex = selectedIndex.value[0] || 0;
-      const newIndex =
-        currentIndex + 1 >
-        ((contentType.value === "library"
-          ? window.appInteractor.getState("viewState.entitiesCount")
-          : window.appInteractor.getState(
-              "viewState.feedEntitiesCount"
-            )) as number) -
-          1
-          ? currentIndex
-          : currentIndex + 1;
-      window.appInteractor.setState(
-        "selectionState.selectedIndex",
-        JSON.stringify([newIndex])
-      );
+      onArrowDownPressed();
     }
 
     if (event.code === "ArrowUp") {
-      const currentIndex = selectedIndex.value[0] || 0;
-      const newIndex = currentIndex - 1 < 0 ? 0 : currentIndex - 1;
-      window.appInteractor.setState(
-        "selectionState.selectedIndex",
-        JSON.stringify([newIndex])
-      );
+      onArrowUpPressed();
     }
 
     if (event.code === "Space" && selectedEntities.value.length >= 1) {
       previewSelectedEntities();
     }
   }
-}
+};
+
 window.addEventListener("keydown", preventSpaceArrowScrollEvent, true);
 
 window.appInteractor.registerMainSignal("shortcut-cmd-shift-c", () => {
@@ -413,12 +424,13 @@ window.appInteractor.registerMainSignal("shortcut-cmd-shift-k", () => {
   if (selectedEntities.value.length >= 1) {
     exportSelectedEntities("BibTex-Key");
   }
-}),
-  window.appInteractor.registerMainSignal("shortcut-cmd-e", () => {
-    if (selectedEntities.value.length == 1) {
-      editSelectedEntities();
-    }
-  });
+});
+
+window.appInteractor.registerMainSignal("shortcut-cmd-e", () => {
+  if (selectedEntities.value.length == 1) {
+    editSelectedEntities();
+  }
+});
 
 window.appInteractor.registerMainSignal("shortcut-cmd-f", () => {
   if (selectedEntities.value.length >= 1) {
@@ -432,87 +444,78 @@ window.appInteractor.registerMainSignal("shortcut-cmd-r", () => {
   }
 });
 
-window.appInteractor.registerMainSignal("shortcut-arrow-up", () => {
-  const currentIndex = selectedIndex.value[0] || 0;
-  const newIndex = currentIndex - 1 < 0 ? 0 : currentIndex - 1;
-  if (
-    !window.appInteractor.getState("viewState.isEditViewShown") &&
-    !window.appInteractor.getState("viewState.isPreferenceViewShown")
-  ) {
-    window.appInteractor.setState(
-      "selectionState.selectedIndex",
-      JSON.stringify([newIndex])
-    );
-  }
-});
+window.appInteractor.registerMainSignal("shortcut-arrow-up", () =>
+  onArrowUpPressed()
+);
 
-window.appInteractor.registerMainSignal("shortcut-arrow-down", () => {
-  const currentIndex = selectedIndex.value[0] || 0;
-  const newIndex =
-    currentIndex + 1 >
-    ((contentType.value === "library"
-      ? window.appInteractor.getState("viewState.entitiesCount")
-      : window.appInteractor.getState(
-          "viewState.feedEntitiesCount"
-        )) as number) -
-      1
-      ? currentIndex
-      : currentIndex + 1;
-  if (
-    !window.appInteractor.getState("viewState.isEditViewShown") &&
-    !window.appInteractor.getState("viewState.isPreferenceViewShown")
-  ) {
-    window.appInteractor.setState(
-      "selectionState.selectedIndex",
-      JSON.stringify([newIndex])
-    );
-  }
-});
+window.appInteractor.registerMainSignal("shortcut-arrow-down", () =>
+  onArrowDownPressed()
+);
 
 // =======================================
 // Register state change
-window.appInteractor.registerState("viewState.contentType", (value) => {
-  contentType.value = value as string;
-  clearSelected();
-});
+watch(
+  () => selectionState.selectedIndex,
+  (value) => {
+    reloadSelectedEntities();
+  }
+);
 
-window.appInteractor.registerState("selectionState.selectedIndex", (value) => {
-  selectedIndex.value = JSON.parse(value as string) as number[];
-  reloadSelectedEntities();
-});
+watch(
+  () => props.entities,
+  (value) => {
+    reloadSelectedEntities();
+  }
+);
 
-window.appInteractor.registerState("dbState.entitiesUpdated", (value) => {
-  reloadSelectedEntities();
-});
+watch(
+  () => props.feedEntities,
+  (value) => {
+    reloadSelectedEntities();
+  }
+);
 
-window.appInteractor.registerState("dbState.feedEntitiesUpdated", (value) => {
-  reloadSelectedEntities();
-});
-
-window.appInteractor.registerState("viewState.sortBy", (value) => {
-  sortBy.value = value as string;
-  clearSelected();
-});
-
-window.appInteractor.registerState("viewState.sortOrder", (value) => {
-  sortOrder.value = value as string;
-  clearSelected();
-});
-
-window.appInteractor.registerState("viewState.searchText", (value) => {
-  clearSelected();
-});
-
-window.appInteractor.registerState(
-  "selectionState.selectedCategorizer",
+watch(
+  () => viewState.contentType,
   (value) => {
     clearSelected();
   }
 );
 
-window.appInteractor.registerState("selectionState.selectedFeed", (value) => {
-  clearSelected();
-});
+watch(
+  () => viewState.sortBy,
+  (value) => {
+    clearSelected();
+  }
+);
+
+watch(
+  () => viewState.sortOrder,
+  (value) => {
+    clearSelected();
+  }
+);
+
+watch(
+  () => viewState.searchText,
+  (value) => {
+    clearSelected();
+  }
+);
+
+watch(
+  () => selectionState.selectedCategorizer,
+  (value) => {
+    clearSelected();
+  }
+);
+
+watch(
+  () => selectionState.selectedFeed,
+  (value) => {
+    clearSelected();
+  }
+);
 </script>
 
 <template>
@@ -520,8 +523,8 @@ window.appInteractor.registerState("selectionState.selectedFeed", (value) => {
     <WindowMenuBar
       class="flex-none"
       @click="onMenuButtonClicked"
-      :sortBy="sortBy"
-      :sortOrder="sortOrder"
+      :sortBy="viewState.sortBy"
+      :sortOrder="viewState.sortOrder"
       :disableSingleBtn="selectedEntities.length !== 1"
       :disableMultiBtn="selectedEntities.length === 0"
       @input-focus="searchInputFocus = true"
@@ -531,8 +534,8 @@ window.appInteractor.registerState("selectionState.selectedFeed", (value) => {
     <div class="grow flex divide-x dark:divide-neutral-700">
       <PaperDataView
         :entities="entities"
-        :sortBy="sortBy"
-        :sortOrder="sortOrder"
+        :sortBy="viewState.sortBy"
+        :sortOrder="viewState.sortOrder"
         :show-main-year="showMainYear"
         :show-main-publication="showMainPublication"
         :show-main-pub-type="showMainPubType"
@@ -541,16 +544,16 @@ window.appInteractor.registerState("selectionState.selectedFeed", (value) => {
         :show-main-folders="showMainFolders"
         :show-main-rating="showMainRating"
         :show-main-note="showMainNote"
-        v-if="contentType === 'library'"
+        v-if="viewState.contentType === 'library'"
       />
       <FeedDataView
         :entities="feedEntities"
-        :sortBy="sortBy"
-        :sortOrder="sortOrder"
+        :sortBy="viewState.sortBy"
+        :sortOrder="viewState.sortOrder"
         :show-main-year="showMainYear"
         :show-main-publication="showMainPublication"
         :show-main-pub-type="showMainPubType"
-        v-if="contentType === 'feed'"
+        v-if="viewState.contentType === 'feed'"
       />
       <PaperDetailView
         :entity="
@@ -559,7 +562,7 @@ window.appInteractor.registerState("selectionState.selectedFeed", (value) => {
             : PaperEntityPlaceholder
         "
         v-show="selectedEntities.length === 1"
-        v-if="contentType === 'library'"
+        v-if="viewState.contentType === 'library'"
       />
       <FeedDetailView
         :feedEntity="
@@ -567,7 +570,7 @@ window.appInteractor.registerState("selectionState.selectedFeed", (value) => {
         "
         :feedEntityAddingStatus="feedEntityAddingStatus"
         v-show="selectedFeedEntities.length === 1"
-        v-if="contentType === 'feed'"
+        v-if="viewState.contentType === 'feed'"
         @add-clicked="addSelectedFeedEntities"
         @read-timeout="readSelectedFeedEntities(true)"
         @read-timeout-in-unread="readSelectedFeedEntities(true, true)"

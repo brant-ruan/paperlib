@@ -9,52 +9,28 @@ import { EmbedWebImporter } from "./importers/embed";
 import { PDFUrlWebImporter } from "./importers/pdfurl";
 
 import { Preference } from "../../utils/preference";
-import { SharedState } from "../../utils/appstate";
 import { PreloadStateStore } from "../../../state/appstate";
 import { PaperEntityDraft } from "../../models/PaperEntityDraft";
 
 export class WebImporterRepository {
-  sharedState: SharedState;
   stateStore: PreloadStateStore;
   preference: Preference;
 
   importerList: Record<string, WebImporterType>;
 
-  constructor(
-    sharedState: SharedState,
-    stateStore: PreloadStateStore,
-    preference: Preference
-  ) {
-    this.sharedState = sharedState;
+  constructor(stateStore: PreloadStateStore, preference: Preference) {
     this.stateStore = stateStore;
     this.preference = preference;
 
     this.importerList = {
-      arxiv: new ArXivWebImporter(
-        this.sharedState,
-        this.stateStore,
-        this.preference
-      ),
+      arxiv: new ArXivWebImporter(this.stateStore, this.preference),
       googlescholar: new GoogleScholarWebImporter(
-        this.sharedState,
         this.stateStore,
         this.preference
       ),
-      ieee: new IEEEWebImporter(
-        this.sharedState,
-        this.stateStore,
-        this.preference
-      ),
-      embed: new EmbedWebImporter(
-        this.sharedState,
-        this.stateStore,
-        this.preference
-      ),
-      pdfurl: new PDFUrlWebImporter(
-        this.sharedState,
-        this.stateStore,
-        this.preference
-      ),
+      ieee: new IEEEWebImporter(this.stateStore, this.preference),
+      embed: new EmbedWebImporter(this.stateStore, this.preference),
+      pdfurl: new PDFUrlWebImporter(this.stateStore, this.preference),
     };
   }
 

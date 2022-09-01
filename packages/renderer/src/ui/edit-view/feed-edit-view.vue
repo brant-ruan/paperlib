@@ -1,12 +1,21 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, watch } from "vue";
 
 import InputBox from "./components/input-box.vue";
 import { FeedDraft } from "../../../../preload/models/FeedDraft";
-import { Feed } from "../../../../preload/models/Feed";
+import { RendererStateStore } from "../../../../state/appstate";
 
-const isFeedEditViewShown = ref(false);
-const feedDraft = ref(new FeedDraft());
+const viewState = RendererStateStore.useViewState();
+const bufferState = RendererStateStore.useBufferState();
+
+const editingFeedDraft = ref(new FeedDraft(false));
+
+watch(
+  () => bufferState.editingFeedDraft,
+  (draft) => {
+    editingFeedDraft.value.initialize(draft);
+  }
+);
 
 const keyDownListener = (e: KeyboardEvent) => {
   if (
@@ -24,24 +33,22 @@ const keyDownListener = (e: KeyboardEvent) => {
   }
 };
 
-window.appInteractor.registerState("viewState.isFeedEditViewShown", (value) => {
-  isFeedEditViewShown.value = value as boolean;
-  if (isFeedEditViewShown) {
-    window.addEventListener("keydown", keyDownListener, { once: true });
+watch(
+  () => viewState.isFeedEditViewShown,
+  (isShown) => {
+    if (isShown) {
+      document.addEventListener("keydown", keyDownListener, { once: true });
+    }
   }
-});
-
-window.appInteractor.registerState("sharedData.editFeedDraft", (value) => {
-  feedDraft.value.initialize(JSON.parse(value as string) as Feed);
-});
+);
 
 const onCloseClicked = () => {
-  window.appInteractor.setState("viewState.isFeedEditViewShown", false);
+  viewState.isFeedEditViewShown = false;
 };
 
 const onSaveClicked = async () => {
-  window.feedInteractor.update(JSON.stringify([feedDraft.value]));
-  window.appInteractor.setState("viewState.isFeedEditViewShown", false);
+  window.feedInteractor.update(JSON.stringify([editingFeedDraft.value]));
+  viewState.isFeedEditViewShown = false;
 };
 </script>
 
@@ -56,7 +63,7 @@ const onSaveClicked = async () => {
   >
     <div
       class="fixed top-0 right-0 left-0 z-50 w-screen h-screen bg-neutral-800 dark:bg-neutral-900 bg-opacity-50 dark:bg-opacity-80"
-      v-if="isFeedEditViewShown"
+      v-if="viewState.isFeedEditViewShown"
     >
       <div class="flex flex-col justify-center items-center w-full h-full">
         <div
@@ -64,13 +71,13 @@ const onSaveClicked = async () => {
         >
           <InputBox
             placeholder="Feed Name"
-            :value="feedDraft.name"
-            @changed="(value) => (feedDraft.name = value)"
+            :value="editingFeedDraft.name"
+            @changed="(value) => (editingFeedDraft.name = value)"
           />
           <InputBox
             placeholder="Feed URL"
-            :value="feedDraft.url"
-            @changed="(value) => (feedDraft.url = value)"
+            :value="editingFeedDraft.url"
+            @changed="(value) => (editingFeedDraft.url = value)"
           />
           <div class="flex justify-end space-x-2">
             <div

@@ -1,5 +1,4 @@
 import { contextBridge } from "electron";
-import { SharedState } from "./utils/appstate";
 import { Preference } from "./utils/preference";
 import { PreloadStateStore } from "../state/appstate";
 
@@ -28,42 +27,20 @@ domReady().then(appendLoading);
 // ============================================================
 // State and Preference
 const preference = new Preference();
-const sharedState = new SharedState(preference);
-const stateStore = new PreloadStateStore();
+const stateStore = new PreloadStateStore(preference);
 
 // ============================================================
 // Repositories
-const dbRepository = new DBRepository(sharedState, stateStore, preference);
-const fileRepository = new FileRepository(sharedState, stateStore, preference);
-const scraperRepository = new ScraperRepository(
-  sharedState,
-  stateStore,
-  preference
-);
-const cacheRepository = new CacheRepository(
-  sharedState,
-  stateStore,
-  preference
-);
-const referenceRepository = new ReferenceRepository(
-  sharedState,
-  stateStore,
-  preference
-);
-const webImporterRepository = new WebImporterRepository(
-  sharedState,
-  stateStore,
-  preference
-);
-const rssRepository = new RSSRepository(sharedState, preference);
-const downloaderRepository = new DownloaderRepository(
-  sharedState,
-  stateStore,
-  preference
-);
+const dbRepository = new DBRepository(stateStore, preference);
+const fileRepository = new FileRepository(stateStore, preference);
+const scraperRepository = new ScraperRepository(stateStore, preference);
+const cacheRepository = new CacheRepository(stateStore, preference);
+const referenceRepository = new ReferenceRepository(stateStore, preference);
+const webImporterRepository = new WebImporterRepository(stateStore, preference);
+const rssRepository = new RSSRepository(preference);
+const downloaderRepository = new DownloaderRepository(stateStore, preference);
 
 const appInteractor = new AppInteractor(
-  sharedState,
   stateStore,
   preference,
   dbRepository,
@@ -72,7 +49,6 @@ const appInteractor = new AppInteractor(
   downloaderRepository
 );
 const entityInteractor = new EntityInteractor(
-  sharedState,
   stateStore,
   preference,
   dbRepository,
@@ -84,7 +60,7 @@ const entityInteractor = new EntityInteractor(
 );
 const renderInteractor = new RenderInteractor(preference);
 const browserExtensionInteractor = new BrowserExtensionInteractor(
-  sharedState,
+  stateStore,
   preference,
   dbRepository,
   fileRepository,
@@ -92,7 +68,6 @@ const browserExtensionInteractor = new BrowserExtensionInteractor(
   entityInteractor
 );
 const feedInteractor = new FeedInteractor(
-  sharedState,
   stateStore,
   preference,
   dbRepository,
@@ -102,7 +77,7 @@ const feedInteractor = new FeedInteractor(
   entityInteractor
 );
 const pluginMainInteractor = new PluginMainInteractor(
-  sharedState,
+  stateStore,
   preference,
   referenceRepository,
   entityInteractor

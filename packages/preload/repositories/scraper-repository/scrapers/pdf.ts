@@ -4,7 +4,6 @@ import * as pdfjs from "pdfjs-dist/build/pdf";
 
 import { Scraper, ScraperRequestType, ScraperType } from "./scraper";
 import { Preference } from "../../../utils/preference";
-import { SharedState } from "../../../utils/appstate";
 import { PreloadStateStore } from "../../../../state/appstate";
 import { PaperEntityDraft } from "../../../models/PaperEntityDraft";
 import { constructFileURL } from "../../../utils/path";
@@ -16,12 +15,8 @@ import {
 } from "pdfjs-dist/types/src/display/api";
 
 export class PDFScraper extends Scraper {
-  constructor(
-    sharedState: SharedState,
-    stateStore: PreloadStateStore,
-    preference: Preference
-  ) {
-    super(sharedState, stateStore, preference);
+  constructor(stateStore: PreloadStateStore, preference: Preference) {
+    super(stateStore, preference);
 
     const worker = new Worker("./pdf.worker.min.js");
     pdfjs.GlobalWorkerOptions.workerPort = worker;

@@ -3,23 +3,16 @@ import { promises as fsPromise, existsSync } from "fs";
 
 import { PaperEntityDraft } from "../../../models/PaperEntityDraft";
 
-import { SharedState } from "../../../utils/appstate";
 import { PreloadStateStore } from "../../../../state/appstate";
 import { Preference } from "../../../utils/preference";
 import { FileBackend } from "./backend";
 import { constructFileURL } from "../../../utils/path";
 
 export class LocalFileBackend implements FileBackend {
-  sharedState: SharedState;
   stateStore: PreloadStateStore;
   preference: Preference;
 
-  constructor(
-    sharedState: SharedState,
-    stateStore: PreloadStateStore,
-    preference: Preference
-  ) {
-    this.sharedState = sharedState;
+  constructor(stateStore: PreloadStateStore, preference: Preference) {
     this.stateStore = stateStore;
     this.preference = preference;
 
@@ -27,7 +20,7 @@ export class LocalFileBackend implements FileBackend {
   }
 
   async check() {
-    this.sharedState.set("viewState.syncFileStorageAvaliable", false);
+    this.stateStore.viewState.syncFileStorageAvaliable.value = false;
     return Promise.resolve(true);
   }
 

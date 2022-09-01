@@ -1,6 +1,5 @@
 import fs from "fs";
 import { PaperEntityDraft } from "../..//models/PaperEntityDraft";
-import { SharedState } from "../../utils/appstate";
 import { PreloadStateStore } from "../../../state/appstate";
 import { Preference } from "../../utils/preference";
 import { getAllFiles } from "../../utils/path";
@@ -9,24 +8,18 @@ import { LocalFileBackend } from "./backends/local-backend";
 import { WebDavFileBackend } from "./backends/webdav-backend";
 
 export class FileRepository {
-  sharedState: SharedState;
   stateStore: PreloadStateStore;
   preference: Preference;
 
   backend: FileBackend;
 
-  constructor(
-    sharedState: SharedState,
-    stateStore: PreloadStateStore,
-    preference: Preference
-  ) {
-    this.sharedState = sharedState;
+  constructor(stateStore: PreloadStateStore, preference: Preference) {
     this.stateStore = stateStore;
     this.preference = preference;
 
     this.backend = this.initBackend();
 
-    this.sharedState.register("viewState.storageBackendReinited", () => {
+    this.stateStore.register("viewState.storageBackendReinited", () => {
       this.backend = this.initBackend();
     });
   }
@@ -135,17 +128,9 @@ export class FileRepository {
 
   initBackend(): FileBackend {
     if (this.preference.get("syncFileStorage") === "local") {
-      return new LocalFileBackend(
-        this.sharedState,
-        this.stateStore,
-        this.preference
-      );
+      return new LocalFileBackend(this.stateStore, this.preference);
     } else if (this.preference.get("syncFileStorage") === "webdav") {
-      return new WebDavFileBackend(
-        this.sharedState,
-        this.stateStore,
-        this.preference
-      );
+      return new WebDavFileBackend(this.stateStore, this.preference);
     } else {
       throw new Error("Unknown file storage backend");
     }

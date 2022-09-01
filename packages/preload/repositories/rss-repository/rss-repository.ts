@@ -1,20 +1,16 @@
 import Parser from "rss-parser";
 
 import { Preference, ScraperPreference } from "../../utils/preference";
-import { SharedState } from "../../utils/appstate";
 import { Feed } from "../../models/Feed";
 import { FeedDraft } from "../../models/FeedDraft";
-import { FeedEntity } from "../../models/FeedEntity";
 import { FeedEntityDraft } from "../../models/FeedEntityDraft";
 
 export class RSSRepository {
-  sharedState: SharedState;
   preference: Preference;
 
   parser: Parser;
 
-  constructor(sharedState: SharedState, preference: Preference) {
-    this.sharedState = sharedState;
+  constructor(preference: Preference) {
     this.preference = preference;
 
     this.parser = new Parser();

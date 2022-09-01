@@ -15,6 +15,7 @@ import Supplementary from "./components/supplementary.vue";
 import Markdown from "./components/markdown.vue";
 import { onBeforeUpdate, onMounted, ref } from "vue";
 import PubDetails from "./components/pub-details.vue";
+import { RendererStateStore } from "../../../../../state/appstate";
 
 const props = defineProps({
   entity: {
@@ -22,6 +23,8 @@ const props = defineProps({
     required: true,
   },
 });
+
+const viewState = RendererStateStore.useViewState();
 
 const onRatingChanged = (value: number) => {
   const entityDraft = new PaperEntityDraft();
@@ -57,14 +60,14 @@ const modifyMainFile = async (url: string) => {
   entityDraft.initialize(props.entity);
   entityDraft.mainURL = url;
   await window.entityInteractor.update(JSON.stringify([entityDraft]));
-  window.appInteractor.setState("viewState.renderRequired", `${Date.now()}`);
+  viewState.renderRequired = `${Date.now()}`;
 };
 
 const locateMainFile = async () => {
   const entityDraft = new PaperEntityDraft();
   entityDraft.initialize(props.entity);
   await window.entityInteractor.locateMainFile(JSON.stringify([entityDraft]));
-  window.appInteractor.setState("viewState.renderRequired", `${Date.now()}`);
+  viewState.renderRequired = `${Date.now()}`;
 };
 
 const addSups = (urls: string[]) => {

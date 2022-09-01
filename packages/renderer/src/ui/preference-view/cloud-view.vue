@@ -3,6 +3,7 @@ import { ref } from "vue";
 import Options from "./components/options.vue";
 
 import { PreferenceStore } from "../../../../preload/utils/preference";
+import { RendererStateStore } from "../../../../state/appstate";
 
 const props = defineProps({
   preference: {
@@ -10,6 +11,8 @@ const props = defineProps({
     required: true,
   },
 });
+
+const viewState = RendererStateStore.useViewState();
 
 const syncAPPID = ref(props.preference.syncAPPID);
 const syncEmail = ref(props.preference.syncEmail);
@@ -52,41 +55,17 @@ window.appInteractor.getPassword("realmSync").then((password) => {
 
 // =============================================================================
 // WebDAV
-
-const syncFileStorageAvaliable = ref(
-  JSON.parse(
-    window.appInteractor.getState(
-      "viewState.syncFileStorageAvaliable"
-    ) as string
-  ) as boolean
-);
-
-window.appInteractor.registerState(
-  "viewState.syncFileStorageAvaliable",
-  (value) => {
-    syncFileStorageAvaliable.value = value as boolean;
-  }
-);
-
 const onWebdavConnectClicked = async () => {
   window.appInteractor.updatePreference("webdavURL", webdavURL.value);
   window.appInteractor.updatePreference("webdavUsername", webdavUsername.value);
   await window.appInteractor.setPassword("webdav", webdavPassword.value);
   window.appInteractor.updatePreference("syncFileStorage", "webdav");
-
-  window.appInteractor.setState(
-    "viewState.storageBackendReinited",
-    `${Date.now()}`
-  );
+  viewState.storageBackendReinited = `${Date.now()}`;
 };
 
 const onWebdavDisconnectClicked = () => {
   window.appInteractor.updatePreference("syncFileStorage", "local");
-
-  window.appInteractor.setState(
-    "viewState.storageBackendReinited",
-    `${Date.now()}`
-  );
+  viewState.storageBackendReinited = `${Date.now()}`;
 };
 </script>
 
@@ -192,8 +171,8 @@ const onWebdavDisconnectClicked = () => {
         type="text"
         placeholder="WebDAV URL"
         v-model="webdavURL"
-        :disabled="syncFileStorageAvaliable"
-        :class="syncFileStorageAvaliable ? 'text-neutral-400' : ''"
+        :disabled="viewState.syncFileStorageAvaliable"
+        :class="viewState.syncFileStorageAvaliable ? 'text-neutral-400' : ''"
       />
 
       <div class="flex space-x-2 justify-between">
@@ -202,28 +181,28 @@ const onWebdavDisconnectClicked = () => {
           type="text"
           placeholder="Usearname"
           v-model="webdavUsername"
-          :disabled="syncFileStorageAvaliable"
-          :class="syncFileStorageAvaliable ? 'text-neutral-400' : ''"
+          :disabled="viewState.syncFileStorageAvaliable"
+          :class="viewState.syncFileStorageAvaliable ? 'text-neutral-400' : ''"
         />
         <input
           class="p-2 rounded-md text-xs bg-neutral-200 dark:bg-neutral-700 focus:outline-none w-56"
           type="password"
           placeholder="Password"
           v-model="webdavPassword"
-          :disabled="syncFileStorageAvaliable"
-          :class="syncFileStorageAvaliable ? 'text-neutral-400' : ''"
+          :disabled="viewState.syncFileStorageAvaliable"
+          :class="viewState.syncFileStorageAvaliable ? 'text-neutral-400' : ''"
         />
         <div class="flex text-xs">
           <div
             class="flex h-full w-[5.5rem] my-auto text-center rounded-md bg-neutral-200 dark:bg-neutral-600 hover:bg-neutral-300 hover:dark:bg-neutral-500"
-            v-if="!syncFileStorageAvaliable"
+            v-if="!viewState.syncFileStorageAvaliable"
             @click="onWebdavConnectClicked"
           >
             <span class="m-auto">Connect</span>
           </div>
           <div
             class="flex h-full w-[5.5rem] my-auto text-center rounded-md bg-neutral-200 dark:bg-neutral-600 hover:bg-neutral-300 hover:dark:bg-neutral-500"
-            v-if="syncFileStorageAvaliable"
+            v-if="viewState.syncFileStorageAvaliable"
             @click="onWebdavDisconnectClicked"
           >
             <span class="m-auto">Disconnect</span>

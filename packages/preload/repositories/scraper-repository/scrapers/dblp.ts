@@ -3,7 +3,6 @@ import { Response } from "got";
 import { Scraper, ScraperRequestType } from "./scraper";
 import { formatString } from "../../../utils/string";
 import { Preference } from "../../../utils/preference";
-import { SharedState } from "../../../utils/appstate";
 import { PreloadStateStore } from "../../../../state/appstate";
 import { PaperEntityDraft } from "../../../models/PaperEntityDraft";
 
@@ -144,12 +143,11 @@ export class DBLPbyTimeScraper extends Scraper {
   offset: number;
 
   constructor(
-    sharedState: SharedState,
     stateStore: PreloadStateStore,
     preference: Preference,
     offset: number
   ) {
-    super(sharedState, stateStore, preference);
+    super(stateStore, preference);
     this.offset = offset;
   }
 

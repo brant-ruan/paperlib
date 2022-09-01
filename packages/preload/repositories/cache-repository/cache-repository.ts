@@ -1,14 +1,12 @@
 import Realm from "realm";
 
 import { Preference } from "../../utils/preference";
-import { SharedState } from "../../utils/appstate";
 import { PreloadStateStore } from "../../../state/appstate";
 
 import { getConfig, initCache } from "./cache-init";
 import { update, getPDFText, fullTextFilter, remove } from "./cache-crud";
 
 export class CacheRepository {
-  sharedState: SharedState;
   stateStore: PreloadStateStore;
   preference: Preference;
 
@@ -21,12 +19,7 @@ export class CacheRepository {
   entitiesListenerInited: boolean;
   categorizersListenerInited: Record<string, boolean>;
 
-  constructor(
-    sharedState: SharedState,
-    stateStore: PreloadStateStore,
-    preference: Preference
-  ) {
-    this.sharedState = sharedState;
+  constructor(stateStore: PreloadStateStore, preference: Preference) {
     this.stateStore = stateStore;
     this.preference = preference;
 

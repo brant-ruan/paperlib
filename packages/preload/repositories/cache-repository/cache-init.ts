@@ -28,10 +28,7 @@ export function getConfig(this: CacheRepository): Realm.Configuration {
   const config = {
     schema: [PaperEntityCacheSchema],
     schemaVersion: this._schemaVersion,
-    path: path.join(
-      this.sharedState.dbState.defaultPath.get() as string,
-      "cache.realm"
-    ),
+    path: path.join(this.stateStore.dbState.defaultPath.value, "cache.realm"),
   };
   this.config = config;
   return config;

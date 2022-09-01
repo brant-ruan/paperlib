@@ -1,18 +1,13 @@
 import { WebContentType, WebImporter } from "./importer";
-import { SharedState } from "../../../utils/appstate";
 import { PreloadStateStore } from "../../../../state/appstate";
 import { Preference } from "../../../utils/preference";
 import { PaperEntityDraft } from "../../../models/PaperEntityDraft";
 import { downloadPDFs } from "../../../utils/got";
 
 export class PDFUrlWebImporter extends WebImporter {
-  constructor(
-    sharedState: SharedState,
-    stateStore: PreloadStateStore,
-    preference: Preference
-  ) {
+  constructor(stateStore: PreloadStateStore, preference: Preference) {
     const urlRegExp = new RegExp(".*.pdf$");
-    super(sharedState, stateStore, preference, urlRegExp);
+    super(stateStore, preference, urlRegExp);
   }
 
   async parsingProcess(

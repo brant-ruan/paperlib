@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, watch } from "vue";
 
 import {
   BIconGearWideConnected,
@@ -29,6 +29,7 @@ import HotkeyView from "./hotkey-view.vue";
 import DownloaderView from "./downloader-view.vue";
 
 import { PreferenceStore } from "../../../../preload/utils/preference";
+import { RendererStateStore } from "../../../../state/appstate";
 
 defineProps({
   preference: {
@@ -37,11 +38,12 @@ defineProps({
   },
 });
 
-const isPreferenceViewShown = ref(false);
+const viewState = RendererStateStore.useViewState();
+
 const preferenceTab = ref("general");
 
 const onCloseClicked = () => {
-  window.appInteractor.setState("viewState.isPreferenceViewShown", false);
+  viewState.isPreferenceViewShown = false;
 };
 
 const keyDownListener = (e: KeyboardEvent) => {
@@ -61,12 +63,11 @@ const keyDownListener = (e: KeyboardEvent) => {
   }
 };
 
-window.appInteractor.registerState(
-  "viewState.isPreferenceViewShown",
-  (value) => {
-    isPreferenceViewShown.value = value as boolean;
-    if (isPreferenceViewShown) {
-      document.addEventListener("keydown", keyDownListener, { once: true });
+watch(
+  () => viewState.isPreferenceViewShown,
+  (isShown) => {
+    if (isShown) {
+      window.addEventListener("keydown", keyDownListener, { once: true });
     }
   }
 );
@@ -83,7 +84,7 @@ window.appInteractor.registerState(
   >
     <div
       class="fixed top-0 right-0 left-0 z-50 w-screen h-screen bg-neutral-800 dark:bg-neutral-900 bg-opacity-50 dark:bg-opacity-80"
-      v-if="isPreferenceViewShown"
+      v-if="viewState.isPreferenceViewShown"
     >
       <div class="flex justify-center items-center w-full h-full">
         <div

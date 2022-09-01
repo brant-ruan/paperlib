@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, watch } from "vue";
 
 import {
   BIconCollection,
@@ -16,7 +16,7 @@ import {
   PaperFolder,
   Categorizers,
 } from "../../../../preload/models/PaperCategorizer";
-import { AppInteractor } from "packages/preload/interactors/app-interactor";
+import { RendererStateStore } from "../../../../state/appstate";
 
 const props = defineProps({
   tags: Array as () => Array<PaperTag>,
@@ -25,22 +25,13 @@ const props = defineProps({
   compact: Boolean,
 });
 
-const entitiesCount = ref(
-  window.appInteractor.getState("viewState.entitiesCount") as number
-);
-const selectedCategorizer = ref("lib-all");
-const editingCategorizer = ref("");
+const viewState = RendererStateStore.useViewState();
+const selectionState = RendererStateStore.useSelectionState();
 
 const isSpinnerShown = ref(false);
-const pluginLinkedFolder = ref(
-  window.appInteractor.getPreference("pluginLinkedFolder") as string
-);
 
 const onSelectCategorizer = (categorizer: string) => {
-  window.appInteractor.setState(
-    "selectionState.selectedCategorizer",
-    categorizer
-  );
+  selectionState.selectedCategorizer = categorizer;
 };
 
 const deleteCategorizer = (categorizer: string) => {
@@ -96,28 +87,12 @@ const onItemDroped = (
   categorizerName: string,
   categorizerType: Categorizers
 ) => {
-  const dragedIdsState = window.appInteractor.getState(
-    "selectionState.dragedIds"
-  ) as string;
-  let dragedIds: Array<string> = [];
-  if (dragedIdsState) {
-    dragedIds = JSON.parse(dragedIdsState) as Array<string>;
-  }
-
-  const selectedIdsState = window.appInteractor.getState(
-    "selectionState.selectedIds"
-  ) as string;
-  let selectedIds: Array<string> = [];
-  if (selectedIdsState) {
-    selectedIds = JSON.parse(selectedIdsState) as Array<string>;
-  }
-
-  if (selectedIds.includes(dragedIds[0])) {
-    dragedIds = selectedIds;
+  if (selectionState.selectedIds.includes(selectionState.dragedIds[0])) {
+    selectionState.dragedIds = selectionState.selectedIds;
   }
 
   window.entityInteractor.updateWithCategorizer(
-    dragedIds,
+    selectionState.dragedIds as string[],
     categorizerName,
     categorizerType
   );
@@ -125,20 +100,26 @@ const onItemDroped = (
 
 const onCategorizerNameChanged = (name: string) => {
   if (
-    editingCategorizer.value &&
-    editingCategorizer.value.replace("folder-", "").replace("tag-", "") !== name
+    selectionState.editingCategorizer &&
+    selectionState.editingCategorizer
+      .replace("folder-", "")
+      .replace("tag-", "") !== name
   ) {
     window.entityInteractor.renameCategorizer(
-      editingCategorizer.value.replace("folder-", "").replace("tag-", ""),
+      selectionState.editingCategorizer
+        .replace("folder-", "")
+        .replace("tag-", ""),
       name,
-      editingCategorizer.value.startsWith("tag-") ? "PaperTag" : "PaperFolder"
+      selectionState.editingCategorizer.startsWith("tag-")
+        ? "PaperTag"
+        : "PaperFolder"
     );
   }
-  window.appInteractor.setState("selectionState.editingCategorizer", "");
+  selectionState.editingCategorizer = "";
 };
 
 const onCategorizerNameInputBlured = () => {
-  window.appInteractor.setState("selectionState.editingCategorizer", "");
+  selectionState.editingCategorizer = "";
 };
 
 window.appInteractor.registerMainSignal(
@@ -149,7 +130,7 @@ window.appInteractor.registerMainSignal(
 );
 
 window.appInteractor.registerMainSignal("sidebar-context-menu-edit", (args) => {
-  window.appInteractor.setState("selectionState.editingCategorizer", args);
+  selectionState.editingCategorizer = args;
 });
 
 window.appInteractor.registerMainSignal(
@@ -159,11 +140,10 @@ window.appInteractor.registerMainSignal(
   }
 );
 
-window.appInteractor.registerState(
-  "viewState.processingQueueCount",
+watch(
+  () => viewState.processingQueueCount,
   (value) => {
-    const processingQueueCount = JSON.parse(value as string) as number;
-    if (processingQueueCount > 0) {
+    if (value > 0) {
       isSpinnerShown.value = true;
     } else {
       isSpinnerShown.value = false;
@@ -171,36 +151,12 @@ window.appInteractor.registerState(
   }
 );
 
-window.appInteractor.registerState("viewState.entitiesCount", (value) => {
-  entitiesCount.value = JSON.parse(value as string) as number;
-});
-
-window.appInteractor.registerState(
-  "selectionState.selectedCategorizer",
-  (value) => {
-    selectedCategorizer.value = value as string;
-  }
-);
-
-window.appInteractor.registerState(
-  "selectionState.editingCategorizer",
+watch(
+  () => selectionState.editingCategorizer,
   (value) => {
     if (value) {
-      window.appInteractor.setState(
-        "selectionState.selectedCategorizer",
-        value
-      );
+      selectionState.selectedCategorizer = value;
     }
-
-    editingCategorizer.value = value as string;
-  }
-);
-
-window.appInteractor.registerState(
-  "selectionState.pluginLinkedFolder",
-  (value) => {
-    console.log(value);
-    pluginLinkedFolder.value = value as string;
   }
 );
 </script>
@@ -209,11 +165,11 @@ window.appInteractor.registerState(
   <div>
     <SectionItem
       name="All Papers"
-      :count="entitiesCount"
+      :count="viewState.entitiesCount"
       :with-counter="showSidebarCount"
       :with-spinner="isSpinnerShown"
       :compact="compact"
-      :active="selectedCategorizer === 'lib-all'"
+      :active="selectionState.selectedCategorizer === 'lib-all'"
       @click="onSelectCategorizer('lib-all')"
     >
       <BIconCollection class="text-sm my-auto text-blue-500 min-w-[1em]" />
@@ -223,7 +179,7 @@ window.appInteractor.registerState(
       :with-counter="false"
       :with-spinner="false"
       :compact="compact"
-      :active="selectedCategorizer === 'lib-flaged'"
+      :active="selectionState.selectedCategorizer === 'lib-flaged'"
       @click="onSelectCategorizer('lib-flaged')"
     >
       <BIconFlag class="text-sm my-auto text-blue-500 min-w-[1em]" />
@@ -236,9 +192,9 @@ window.appInteractor.registerState(
         :with-counter="showSidebarCount"
         :with-spinner="false"
         :compact="compact"
-        :editing="editingCategorizer === `tag-${tag.name}`"
+        :editing="selectionState.editingCategorizer === `tag-${tag.name}`"
         v-for="tag in tags"
-        :active="selectedCategorizer === `tag-${tag.name}`"
+        :active="selectionState.selectedCategorizer === `tag-${tag.name}`"
         @click="onSelectCategorizer(`tag-${tag.name}`)"
         @contextmenu="(e: MouseEvent) => {onItemRightClicked(e, `tag-${tag.name}`)}"
         @droped="
@@ -277,9 +233,9 @@ window.appInteractor.registerState(
         :with-counter="showSidebarCount"
         :with-spinner="false"
         :compact="compact"
-        :editing="editingCategorizer === `folder-${folder.name}`"
+        :editing="selectionState.editingCategorizer === `folder-${folder.name}`"
         v-for="folder in folders"
-        :active="selectedCategorizer === `folder-${folder.name}`"
+        :active="selectionState.selectedCategorizer === `folder-${folder.name}`"
         @click="onSelectCategorizer(`folder-${folder.name}`)"
         @contextmenu="(e: MouseEvent) => {onItemRightClicked(e, `folder-${folder.name}`)}"
         @droped="
@@ -307,7 +263,7 @@ window.appInteractor.registerState(
             'text-green-500': folder.color === 'green',
             'text-yellow-500': folder.color === 'yellow',
           }"
-          v-if="folder.name !== pluginLinkedFolder"
+          v-if="folder.name !== selectionState.pluginLinkedFolder"
         />
         <BIconFolderSymlink
           class="text-sm my-auto min-w-[1em]"
@@ -317,7 +273,7 @@ window.appInteractor.registerState(
             'text-green-500': folder.color === 'green',
             'text-yellow-500': folder.color === 'yellow',
           }"
-          v-if="folder.name === pluginLinkedFolder"
+          v-if="folder.name === selectionState.pluginLinkedFolder"
         />
       </SectionItem>
     </CollopseGroup>

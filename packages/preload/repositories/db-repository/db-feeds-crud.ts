@@ -10,6 +10,28 @@ import { formatString } from "../../utils/string";
 
 // ===========================================================
 // Read
+export async function feedEntitiesByIds(
+  this: DBRepository,
+  ids: ObjectId[] | string[]
+): Promise<FeedEntity[]> {
+  const realm = await this.realm();
+
+  const idsQuery = ids.map((id) => `_id == oid(${id as string})`).join(" OR ");
+
+  let entities = realm
+    .objects<FeedEntity>("FeedEntity")
+    .filtered(`(${idsQuery})`)
+    .toJSON() as FeedEntity[];
+
+  entities = entities.map((entity) => {
+    entity.id = entity.id.toString();
+    entity._id = entity._id.toString();
+    return entity;
+  });
+
+  return entities;
+}
+
 export function createFeedFilterPattern(
   this: DBRepository,
   search: string | null,
@@ -25,9 +47,9 @@ export function createFeedFilterPattern(
   });
 
   if (search) {
-    if (this.sharedState.viewState.searchMode.get() === "general") {
+    if (this.stateStore.viewState.searchMode.value === "general") {
       filterFormat += `(title contains[c] \"${formatedSearch}\" OR authors contains[c] \"${formatedSearch}\" OR publication contains[c] \"${formatedSearch}\" OR abstract contains[c] \"${formatedSearch}\") AND `;
-    } else if (this.sharedState.viewState.searchMode.get() === "advanced") {
+    } else if (this.stateStore.viewState.searchMode.value === "advanced") {
       filterFormat += `(${formatedSearch}) AND `;
     }
   }
@@ -61,7 +83,7 @@ export async function feeds(
         changes.newModifications.length + changes.oldModifications.length;
 
       if (deletionCount > 0 || insertionCount > 0 || modificationCount > 0) {
-        this.sharedState.set("dbState.feedsUpdated", Date.now());
+        this.stateStore.dbState.feedsUpdated.value = Date.now();
       }
     });
     this.feedsListenerInited = true;
@@ -88,7 +110,7 @@ export async function feedEntities(
     .objects("FeedEntity")
     .sorted(sortBy, sortOrder == "desc");
 
-  this.sharedState.set("viewState.feedEntitiesCount", objects.length);
+  this.stateStore.viewState.feedEntitiesCount.value = objects.length;
 
   if (!this.feedEntitiesListenerInited) {
     objects.addListener((objs, changes) => {
@@ -98,7 +120,7 @@ export async function feedEntities(
         changes.newModifications.length + changes.oldModifications.length;
 
       if (deletionCount > 0 || insertionCount > 0 || modificationCount > 0) {
-        this.sharedState.set("dbState.feedEntitiesUpdated", Date.now());
+        this.stateStore.dbState.feedEntitiesUpdated.value = Date.now();
       }
     });
     this.feedEntitiesListenerInited = true;

@@ -1,6 +1,5 @@
 import { ToadScheduler, SimpleIntervalJob, Task } from "toad-scheduler";
 
-import { SharedState } from "../utils/appstate";
 import { PreloadStateStore } from "../../state/appstate";
 import { Preference } from "../utils/preference";
 
@@ -15,7 +14,6 @@ import { WebImporterRepository } from "../repositories/web-importer-repository/w
 import { EntityInteractor } from "./entity-interactor";
 
 export class FeedInteractor {
-  sharedState: SharedState;
   stateStore: PreloadStateStore;
   preference: Preference;
 
@@ -29,7 +27,6 @@ export class FeedInteractor {
   scheduler: ToadScheduler;
 
   constructor(
-    sharedState: SharedState,
     stateStore: PreloadStateStore,
     preference: Preference,
     dbRepository: DBRepository,
@@ -38,7 +35,6 @@ export class FeedInteractor {
     webImporterRepository: WebImporterRepository,
     entityInteractor: EntityInteractor
   ) {
-    this.sharedState = sharedState;
     this.stateStore = stateStore;
     this.preference = preference;
 
@@ -65,30 +61,32 @@ export class FeedInteractor {
     feedName: string,
     unread: boolean,
     sortBy: string,
-    sortOrder: string
+    sortOrder: string,
+    ids: string[] = []
   ) {
-    if (this.sharedState.viewState.searchMode.get() === "fulltext" && search) {
-      this.stateStore.logState.alertLog.value = `Fulltext searching is not supported in the feeds view.`;
-      search = "";
-    }
+    if (ids.length > 0) {
+      return await this.dbRepository.feedEntitiesByIds(ids);
+    } else {
+      if (this.stateStore.viewState.searchMode.value === "fulltext" && search) {
+        this.stateStore.logState.alertLog.value = `Fulltext searching is not supported in the feeds view.`;
+        search = "";
+      }
 
-    let feedEntities = await this.dbRepository.feedEntities(
-      search,
-      feedName,
-      unread,
-      sortBy,
-      sortOrder
-    );
-    return feedEntities;
+      let feedEntities = await this.dbRepository.feedEntities(
+        search,
+        feedName,
+        unread,
+        sortBy,
+        sortOrder
+      );
+      return feedEntities;
+    }
   }
 
   // ============================================================
   // Create
   async update(feeds: string) {
-    this.sharedState.set(
-      "viewState.processingQueueCount",
-      (this.sharedState.viewState.processingQueueCount.value as number) + 1
-    );
+    this.stateStore.viewState.processingQueueCount.value += 1;
     try {
       let feedDrafts = JSON.parse(feeds) as FeedDraft[];
       feedDrafts = feedDrafts.map((feedDraft) => {
@@ -107,10 +105,7 @@ export class FeedInteractor {
       }`;
     }
 
-    this.sharedState.set(
-      "viewState.processingQueueCount",
-      (this.sharedState.viewState.processingQueueCount.value as number) - 1
-    );
+    this.stateStore.viewState.processingQueueCount.value -= 1;
   }
 
   colorizeFeed(feedName: string, color: string) {
@@ -118,10 +113,7 @@ export class FeedInteractor {
   }
 
   async addFeedEntities(feedEntities: string) {
-    this.sharedState.set(
-      "viewState.processingQueueCount",
-      (this.sharedState.viewState.processingQueueCount.value as number) + 1
-    );
+    this.stateStore.viewState.processingQueueCount.value += 1;
 
     try {
       let feedEntityDrafts = JSON.parse(feedEntities) as FeedEntityDraft[];
@@ -154,17 +146,11 @@ export class FeedInteractor {
       }`;
     }
 
-    this.sharedState.set(
-      "viewState.processingQueueCount",
-      (this.sharedState.viewState.processingQueueCount.value as number) - 1
-    );
+    this.stateStore.viewState.processingQueueCount.value -= 1;
   }
 
   async updateFeedEntities(feedEntities: string) {
-    this.sharedState.set(
-      "viewState.processingQueueCount",
-      (this.sharedState.viewState.processingQueueCount.value as number) + 1
-    );
+    this.stateStore.viewState.processingQueueCount.value += 1;
 
     try {
       let feedEntityDrafts = JSON.parse(feedEntities) as FeedEntityDraft[];
@@ -176,19 +162,13 @@ export class FeedInteractor {
       }`;
     }
 
-    this.sharedState.set(
-      "viewState.processingQueueCount",
-      (this.sharedState.viewState.processingQueueCount.value as number) - 1
-    );
+    this.stateStore.viewState.processingQueueCount.value -= 1;
   }
 
   // ============================================================
   // Delete
   async delete(feedName: string) {
-    this.sharedState.set(
-      "viewState.processingQueueCount",
-      (this.sharedState.viewState.processingQueueCount.value as number) + 1
-    );
+    this.stateStore.viewState.processingQueueCount.value += 1;
 
     try {
       await this.dbRepository.deleteFeeds([feedName]);
@@ -198,10 +178,7 @@ export class FeedInteractor {
       }`;
     }
 
-    this.sharedState.set(
-      "viewState.processingQueueCount",
-      (this.sharedState.viewState.processingQueueCount.value as number) - 1
-    );
+    this.stateStore.viewState.processingQueueCount.value -= 1;
   }
 
   async deleteOutdatedFeedEntities() {
@@ -211,10 +188,7 @@ export class FeedInteractor {
   // ============================================================
   // Update
   async refresh(feedName: string) {
-    this.sharedState.set(
-      "viewState.processingQueueCount",
-      (this.sharedState.viewState.processingQueueCount.value as number) + 1
-    );
+    this.stateStore.viewState.processingQueueCount.value += 1;
     try {
       const feed = await this.dbRepository.feeds(feedName, "name", "desc");
       let feedEntityDrafts: FeedEntityDraft[] = [];
@@ -269,10 +243,7 @@ export class FeedInteractor {
       }`;
     }
 
-    this.sharedState.set(
-      "viewState.processingQueueCount",
-      (this.sharedState.viewState.processingQueueCount.value as number) - 1
-    );
+    this.stateStore.viewState.processingQueueCount.value -= 1;
   }
 
   async routineRefresh() {

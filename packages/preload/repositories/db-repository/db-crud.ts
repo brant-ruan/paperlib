@@ -47,9 +47,9 @@ export function createFilterPattern(
   });
 
   if (search) {
-    if (this.sharedState.viewState.searchMode.get() === "general") {
+    if (this.stateStore.viewState.searchMode.value === "general") {
       filterFormat += `(title contains[c] \"${formatedSearch}\" OR authors contains[c] \"${formatedSearch}\" OR publication contains[c] \"${formatedSearch}\" OR note contains[c] \"${formatedSearch}\") AND `;
-    } else if (this.sharedState.viewState.searchMode.get() === "advanced") {
+    } else if (this.stateStore.viewState.searchMode.value === "advanced") {
       filterFormat += `(${formatedSearch}) AND `;
     }
   }
@@ -86,7 +86,7 @@ export async function entities(
     .objects("PaperEntity")
     .sorted(sortBy, sortOrder == "desc");
 
-  this.sharedState.set("viewState.entitiesCount", objects.length);
+  this.stateStore.viewState.entitiesCount.value = objects.length;
 
   if (!this.entitiesListenerInited) {
     objects.addListener((objs, changes) => {
@@ -96,7 +96,7 @@ export async function entities(
         changes.newModifications.length + changes.oldModifications.length;
 
       if (deletionCount > 0 || insertionCount > 0 || modificationCount > 0) {
-        this.sharedState.set("dbState.entitiesUpdated", Date.now());
+        this.stateStore.dbState.entitiesUpdated.value = Date.now();
       }
     });
     this.entitiesListenerInited = true;
@@ -148,18 +148,17 @@ export async function categorizers(
       const modificationCount =
         changes.newModifications.length + changes.oldModifications.length;
 
-      let statePath;
-      if (categorizerType === "PaperTag") {
-        statePath = "dbState.tagsUpdated";
-      } else if (categorizerType === "PaperFolder") {
-        statePath = "dbState.foldersUpdated";
-      } else {
-        throw new Error(
-          `Unknown categorizer type: ${categorizerType as string}`
-        );
-      }
       if (deletionCount > 0 || insertionCount > 0 || modificationCount > 0) {
-        this.sharedState.set(statePath, Date.now());
+        let statePath;
+        if (categorizerType === "PaperTag") {
+          this.stateStore.dbState.tagsUpdated.value = Date.now();
+        } else if (categorizerType === "PaperFolder") {
+          this.stateStore.dbState.foldersUpdated.value = Date.now();
+        } else {
+          throw new Error(
+            `Unknown categorizer type: ${categorizerType as string}`
+          );
+        }
       }
     });
     this.categorizersListenerInited[categorizerType] = true;

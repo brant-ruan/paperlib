@@ -5,12 +5,12 @@ import { FileRepository } from "../repositories/file-repository/file-repository"
 import { WebImporterRepository } from "../repositories/web-importer-repository/web-importer-repository";
 import { WebContentType } from "../repositories/web-importer-repository/importers/importer";
 
-import { SharedState } from "../utils/appstate";
+import { PreloadStateStore } from "../../state/appstate";
 import { Preference } from "../utils/preference";
 import { EntityInteractor } from "./entity-interactor";
 
 export class BrowserExtensionInteractor {
-  sharedState: SharedState;
+  stateStore: PreloadStateStore;
   preference: Preference;
 
   dbRepository: DBRepository;
@@ -24,14 +24,14 @@ export class BrowserExtensionInteractor {
   ws: WebSocket;
 
   constructor(
-    sharedState: SharedState,
+    stateStore: PreloadStateStore,
     preference: Preference,
     dbRepository: DBRepository,
     fileRepository: FileRepository,
     webImporterRepository: WebImporterRepository,
     entityInteractor: EntityInteractor
   ) {
-    this.sharedState = sharedState;
+    this.stateStore = stateStore;
     this.preference = preference;
 
     this.dbRepository = dbRepository;
@@ -48,10 +48,8 @@ export class BrowserExtensionInteractor {
   }
 
   async add(webContent: string) {
-    this.sharedState.set(
-      "viewState.processingQueueCount",
-      (this.sharedState.viewState.processingQueueCount.value as number) + 1
-    );
+    this.stateStore.viewState.processingQueueCount.value += 1;
+
     const entityDraft = await this.webImporterRepository.parse(
       JSON.parse(webContent) as WebContentType
     );
@@ -63,9 +61,6 @@ export class BrowserExtensionInteractor {
       this.ws.send(JSON.stringify({ response: "no-avaliable-importer" }));
     }
 
-    this.sharedState.set(
-      "viewState.processingQueueCount",
-      (this.sharedState.viewState.processingQueueCount.value as number) - 1
-    );
+    this.stateStore.viewState.processingQueueCount.value -= 1;
   }
 }

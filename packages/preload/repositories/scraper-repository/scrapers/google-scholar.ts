@@ -3,7 +3,6 @@ import { parse } from "node-html-parser";
 import { Scraper, ScraperRequestType, ScraperType } from "./scraper";
 import { formatString } from "../../../utils/string";
 import { Preference } from "../../../utils/preference";
-import { SharedState } from "../../../utils/appstate";
 import { safeGot } from "../../../utils/got";
 import { PaperEntityDraft } from "../../../models/PaperEntityDraft";
 import { bibtex2entityDraft, bibtex2json } from "../../../utils/bibtex";
@@ -99,12 +98,8 @@ async function scrapeImpl(
 }
 
 export class GoogleScholarScraper extends Scraper {
-  constructor(
-    sharedState: SharedState,
-    stateStore: PreloadStateStore,
-    preference: Preference
-  ) {
-    super(sharedState, stateStore, preference);
+  constructor(stateStore: PreloadStateStore, preference: Preference) {
+    super(stateStore, preference);
   }
 
   preProcess(entityDraft: PaperEntityDraft): ScraperRequestType {

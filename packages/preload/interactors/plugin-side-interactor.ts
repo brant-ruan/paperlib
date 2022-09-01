@@ -1,20 +1,20 @@
-import { ipcMain, ipcRenderer, shell } from "electron";
+import { ipcRenderer, shell } from "electron";
 
-import { PluginSharedState } from "../utils/appstate";
 import { Preference } from "../utils/preference";
 
 import { PaperEntity } from "../models/PaperEntity";
+import { PluginPreloadStateStore } from "../../state/appstate";
 
 export class PluginSideInteractor {
   port: MessagePort | null;
 
-  sharedState: PluginSharedState;
+  stateStore: PluginPreloadStateStore;
   preference: Preference;
 
-  constructor(sharedState: PluginSharedState, preference: Preference) {
+  constructor(stateStore: PluginPreloadStateStore, preference: Preference) {
     this.port = null;
 
-    this.sharedState = sharedState;
+    this.stateStore = stateStore;
     this.preference = preference;
 
     ipcRenderer.on("plugin-comm-port", (event) => {
@@ -96,7 +96,7 @@ export class PluginSideInteractor {
         folder = "Folder_" + new Date().getTime();
       }
 
-      this.sharedState.set("selectionState.pluginLinkedFolder", folder);
+      this.stateStore.selectionState.pluginLinkedFolder.value = folder;
       this.port.postMessage(
         JSON.stringify({ op: "plugin-link-folder", value: folder })
       );
@@ -105,20 +105,13 @@ export class PluginSideInteractor {
 
   pluginUnlinkFolder() {
     if (this.port) {
-      this.sharedState.set("selectionState.pluginLinkedFolder", "");
+      this.stateStore.selectionState.pluginLinkedFolder.value = "";
       this.port.postMessage(JSON.stringify({ op: "plugin-unlink-folder" }));
     }
   }
 
   linkedFolder(): string {
     return this.preference.get("pluginLinkedFolder") as string;
-  }
-
-  registerState(
-    dest: string,
-    callback: (value: number | string | boolean) => void
-  ) {
-    this.sharedState.register(dest, callback);
   }
 
   registerMainSignal(signal: string, callback: (args: any) => void) {

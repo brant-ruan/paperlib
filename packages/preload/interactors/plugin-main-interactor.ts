@@ -1,6 +1,6 @@
 import { clipboard, ipcRenderer } from "electron";
 
-import { SharedState } from "../utils/appstate";
+import { PreloadStateStore } from "../../state/appstate";
 import { Preference } from "../utils/preference";
 
 import { ReferenceRepository } from "../repositories/reference-repository/reference-repository";
@@ -22,7 +22,7 @@ interface PluginRequestData {
 export class PluginMainInteractor {
   port: MessagePort | null;
 
-  sharedState: SharedState;
+  stateStore: PreloadStateStore;
   preference: Preference;
 
   referenceRepository: ReferenceRepository;
@@ -30,14 +30,14 @@ export class PluginMainInteractor {
   entityInteractor: EntityInteractor;
 
   constructor(
-    sharedState: SharedState,
+    stateStore: PreloadStateStore,
     preference: Preference,
     referenceRepository: ReferenceRepository,
     entityInteractor: EntityInteractor
   ) {
     this.port = null;
 
-    this.sharedState = sharedState;
+    this.stateStore = stateStore;
     this.preference = preference;
 
     this.referenceRepository = referenceRepository;
@@ -78,7 +78,7 @@ export class PluginMainInteractor {
   }
 
   async search(data: PluginRequestData) {
-    this.sharedState.set("viewState.searchMode", "general");
+    this.stateStore.viewState.searchMode.value = "general";
     const entities = await this.entityInteractor.loadEntities(
       data.value,
       false,
@@ -92,9 +92,8 @@ export class PluginMainInteractor {
 
   async export(data: PluginRequestData) {
     let entityDrafts = JSON.parse(data.value) as PaperEntityDraft[];
-    const pluginLinkedFolder = this.sharedState.get(
-      "selectionState.pluginLinkedFolder"
-    ).value as string;
+    const pluginLinkedFolder = this.stateStore.selectionState.pluginLinkedFolder
+      .value as string;
 
     if (entityDrafts.length > 0) {
       entityDrafts = entityDrafts
@@ -133,8 +132,8 @@ export class PluginMainInteractor {
       );
     } else if (data.args?.endsWith("In-Folder")) {
       if (
-        (this.sharedState.get("selectionState.pluginLinkedFolder")
-          .value as string) !== ""
+        (this.stateStore.selectionState.pluginLinkedFolder.value as string) !==
+        ""
       ) {
         const entities = await this.entityInteractor.loadEntities(
           "",
@@ -177,7 +176,7 @@ export class PluginMainInteractor {
 
   pluginLinkFolder(folderName: string) {
     this.preference.set("pluginLinkedFolder", folderName);
-    this.sharedState.set("selectionState.pluginLinkedFolder", folderName);
+    this.stateStore.selectionState.pluginLinkedFolder.value = folderName;
     this.port?.postMessage({
       type: "linked-folder-changed",
       value: folderName,
@@ -186,7 +185,7 @@ export class PluginMainInteractor {
 
   pluginUnlinkFolder() {
     this.preference.set("pluginLinkedFolder", "");
-    this.sharedState.set("selectionState.pluginLinkedFolder", "");
+    this.stateStore.selectionState.pluginLinkedFolder.value = "";
   }
 
   getLinkedFolder() {

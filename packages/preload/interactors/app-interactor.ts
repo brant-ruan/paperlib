@@ -12,12 +12,10 @@ import { DownloaderRepository } from "../repositories/downloader-repository/down
 import { FileRepository } from "../repositories/file-repository/file-repository";
 import { ScraperRepository } from "../repositories/scraper-repository/scraper-repository";
 
-import { SharedState } from "../utils/appstate";
 import { Preference } from "../utils/preference";
 import { PreloadStateStore } from "../../state/appstate";
 
 export class AppInteractor {
-  sharedState: SharedState;
   stateStore: PreloadStateStore;
   preference: Preference;
 
@@ -29,7 +27,6 @@ export class AppInteractor {
   scheduler: ToadScheduler;
 
   constructor(
-    sharedState: SharedState,
     stateStore: PreloadStateStore,
     preference: Preference,
     dbRepository: DBRepository,
@@ -37,7 +34,6 @@ export class AppInteractor {
     scraperRepository: ScraperRepository,
     downloaderRepository: DownloaderRepository
   ) {
-    this.sharedState = sharedState;
     this.stateStore = stateStore;
     this.preference = preference;
 
@@ -73,27 +69,6 @@ export class AppInteractor {
   }
 
   // ============================================================
-  // State Operation
-  getState(dest: string) {
-    return this.sharedState.get(dest).get();
-  }
-
-  setStateStore(key: string, value: any, publish = true) {
-    this.stateStore.set(key, value, publish);
-  }
-
-  setState(dest: string, value: number | string | boolean, publish = true) {
-    this.sharedState.set(dest, value, publish);
-  }
-
-  registerState(
-    dest: string,
-    callback: (value: number | string | boolean) => void
-  ) {
-    this.sharedState.register(dest, callback);
-  }
-
-  // ============================================================
   // Preference
   loadPreferences() {
     return this.preference.store.store;
@@ -104,7 +79,7 @@ export class AppInteractor {
       value = JSON.parse(value as string);
     }
     this.preference.set(name, value);
-    this.sharedState.set("viewState.preferenceUpdated", Date.now());
+    this.stateStore.viewState.preferenceUpdated.value = Date.now();
   }
 
   getPreference(name: string) {

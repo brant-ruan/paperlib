@@ -2,12 +2,13 @@
 // @ts-ignore
 import dragDrop from "drag-drop";
 import "vue-virtual-scroller/dist/vue-virtual-scroller.css";
-import { onMounted, ref, Ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 
 import { PaperEntity } from "../../../../../preload/models/PaperEntity";
 import ListItem from "./components/list-item.vue";
 import TableTitle from "./components/table-title.vue";
 import TableItem from "./components/table-item.vue";
+import { RendererStateStore } from "../../../../../state/appstate";
 
 const props = defineProps({
   entities: Array as () => PaperEntity[],
@@ -29,51 +30,48 @@ const props = defineProps({
   showMainNote: Boolean,
 });
 
-const viewType = ref(window.appInteractor.getState("viewState.viewType"));
+const viewState = RendererStateStore.useViewState();
+const selectionState = RendererStateStore.useSelectionState();
 
-const selectedIndex: Ref<number[]> = ref([]);
 const selectedLastSingleIndex = ref(-1);
 
 const onItemClicked = (event: MouseEvent, index: number) => {
+  let selectedIndex = JSON.parse(
+    JSON.stringify(selectionState.selectedIndex)
+  ) as number[];
   if (event.shiftKey) {
     const minIndex = Math.min(selectedLastSingleIndex.value, index);
     const maxIndex = Math.max(selectedLastSingleIndex.value, index);
-    selectedIndex.value = [];
+    selectionState.selectedIndex = [];
     for (let i = minIndex; i <= maxIndex; i++) {
-      selectedIndex.value.push(i);
+      selectedIndex.push(i);
+      selectionState.selectedIndex = selectedIndex;
     }
-  } else if (event.ctrlKey) {
-    if (selectedIndex.value.indexOf(index) >= 0) {
-      selectedIndex.value.splice(selectedIndex.value.indexOf(index), 1);
+  } else if (event.ctrlKey || event.metaKey) {
+    if (selectionState.selectedIndex.indexOf(index) >= 0) {
+      selectionState.selectedIndex = selectedIndex.filter((i) => i !== index);
     } else {
-      selectedIndex.value.push(index);
+      selectedIndex.push(index);
+      selectionState.selectedIndex = selectedIndex;
     }
   } else {
-    selectedIndex.value = [index];
+    selectionState.selectedIndex = [index];
     selectedLastSingleIndex.value = index;
   }
-  window.appInteractor.setState(
-    "selectionState.selectedIndex",
-    JSON.stringify(selectedIndex.value)
-  );
 };
 
 const onItemRightClicked = (event: MouseEvent, index: number) => {
-  if (selectedIndex.value.indexOf(index) === -1) {
+  if (selectionState.selectedIndex.indexOf(index) === -1) {
     onItemClicked(event, index);
   }
   window.appInteractor.showContextMenu(
     "show-data-context-menu",
-    JSON.stringify(selectedIndex.value.length === 1)
+    JSON.stringify(selectionState.selectedIndex.length === 1)
   );
 };
 
 const onItemDoubleClicked = (event: MouseEvent, index: number, url: string) => {
-  selectedIndex.value = [index];
-  window.appInteractor.setState(
-    "selectionState.selectedIndex",
-    JSON.stringify(selectedIndex.value)
-  );
+  selectionState.selectedIndex = [index];
   window.appInteractor.open(url);
 };
 
@@ -99,29 +97,8 @@ const dragHandler = (event: DragEvent) => {
   event.dataTransfer?.setDragImage(el, 0, 0);
   event.dataTransfer?.setData("text/plain", "paperlibEvent-drag-main-item");
 
-  window.appInteractor.setState(
-    "selectionState.dragedIds",
-    JSON.stringify([el.id])
-  );
+  selectionState.dragedIds = [el.id];
 };
-
-window.appInteractor.registerState("selectionState.selectedIndex", (value) => {
-  const newSelectedIndex = JSON.parse(value as string) as number[];
-
-  if (newSelectedIndex.length === 1 && selectedIndex.value.length === 1) {
-    selectedLastSingleIndex.value = newSelectedIndex[0];
-  }
-
-  selectedIndex.value = newSelectedIndex;
-
-  if (newSelectedIndex.length === 0) {
-    selectedIndex.value = [];
-  }
-});
-
-window.appInteractor.registerState("viewState.viewType", (value) => {
-  viewType.value = value as string;
-});
 
 onMounted(() => {
   registerDropHandler();
@@ -133,17 +110,17 @@ onMounted(() => {
     <TableTitle
       :sortBy="sortBy"
       :sortOrder="sortOrder"
-      v-if="viewType === 'table'"
+      v-if="viewState.viewType === 'table'"
     />
     <RecycleScroller
       class="scroller pr-2"
       :class="
-        viewType === 'list'
+        viewState.viewType === 'list'
           ? 'max-h-[calc(100vh-3rem)]'
           : 'max-h-[calc(100vh-5rem)]'
       "
       :items="entities"
-      :item-size="viewType === 'list' ? 64 : 28"
+      :item-size="viewState.viewType === 'list' ? 64 : 28"
       key-field="id"
       v-slot="{ item, index }"
     >
@@ -159,10 +136,10 @@ onMounted(() => {
         :tags="showMainTags ? item.tags : []"
         :folders="showMainFolders ? item.folders : []"
         :note="showMainNote ? item.note : ''"
-        :active="selectedIndex.indexOf(index) >= 0"
+        :active="selectionState.selectedIndex.indexOf(index) >= 0"
         :read="true"
         @click="(e: MouseEvent) => {onItemClicked(e, index)}"
-        v-if="viewType === 'list'"
+        v-if="viewState.viewType === 'list'"
         @contextmenu="(e: MouseEvent) => {onItemRightClicked(e, index)}"
         @dblclick="(e: MouseEvent) => {onItemDoubleClicked(e, index, item.mainURL)}"
         draggable="true"
@@ -175,10 +152,10 @@ onMounted(() => {
         :year="item.pubTime"
         :publication="item.publication"
         :flag="item.flag"
-        :active="selectedIndex.indexOf(index) >= 0"
+        :active="selectionState.selectedIndex.indexOf(index) >= 0"
         :striped="index % 2 === 0"
         @click="(e: MouseEvent) => {onItemClicked(e, index)}"
-        v-if="viewType === 'table'"
+        v-if="viewState.viewType === 'table'"
         @contextmenu="(e: MouseEvent) => {onItemRightClicked(e, index)}"
         @dblclick="(e: MouseEvent) => {onItemDoubleClicked(e, index, item.mainURL)}"
       />

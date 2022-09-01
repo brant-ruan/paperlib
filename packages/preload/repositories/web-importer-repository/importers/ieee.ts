@@ -9,19 +9,14 @@ import { CookieJar } from "tough-cookie";
 
 import { constructFileURL } from "../../../utils/path";
 import { WebContentType, WebImporter } from "./importer";
-import { SharedState } from "../../../utils/appstate";
 import { PreloadStateStore } from "../../../../state/appstate";
 import { Preference } from "../../../utils/preference";
 import { PaperEntityDraft } from "../../../models/PaperEntityDraft";
 
 export class IEEEWebImporter extends WebImporter {
-  constructor(
-    sharedState: SharedState,
-    stateStore: PreloadStateStore,
-    preference: Preference
-  ) {
+  constructor(stateStore: PreloadStateStore, preference: Preference) {
     const urlRegExp = new RegExp("^https?://ieeexplore.ieee.org/document");
-    super(sharedState, stateStore, preference, urlRegExp);
+    super(stateStore, preference, urlRegExp);
   }
 
   async parsingProcess(

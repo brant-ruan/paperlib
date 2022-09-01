@@ -13,13 +13,16 @@ import PluginTableItem from "./main-view/data-view/components/plugin-table-item.
 import { debounce } from "../utils/debounce";
 import { PaperEntity } from "../../../preload/models/PaperEntity";
 
+import { PluginRendererStateStore } from "../../../state/appstate";
+
+const selectionState = PluginRendererStateStore.useSelectionState();
+
 const searchInput = ref(null);
 
 const exportMode = ref("BibTex");
 const searchText = ref("");
 const searchDebounce = ref(300);
 const selectedIndex: Ref<number> = ref(0);
-const pluginLinkedFolder = ref("");
 
 const isNotificationShown = ref(false);
 
@@ -128,15 +131,8 @@ const onUnlinkClicked = () => {
 };
 
 const checkLinkedFolder = () => {
-  pluginLinkedFolder.value = window.pluginInteractor.linkedFolder();
+  selectionState.pluginLinkedFolder = window.pluginInteractor.linkedFolder();
 };
-
-window.pluginInteractor.registerState(
-  "selectionState.pluginLinkedFolder",
-  (value) => {
-    pluginLinkedFolder.value = value as string;
-  }
-);
 
 window.pluginInteractor.registerMainSignal("plugin-gain-focus", () => {
   checkLinkedFolder();
@@ -203,7 +199,7 @@ onMounted(() => {
         <div
           class="flex space-x-1"
           @click="onLinkClicked"
-          v-if="pluginLinkedFolder === ''"
+          v-if="selectionState.pluginLinkedFolder === ''"
         >
           <BIconLink class="my-auto text-base" />
           <span class="my-auto mr-1 select-none">Link Folder</span>
@@ -211,15 +207,17 @@ onMounted(() => {
         <div
           class="flex space-x-1"
           @click="onUnlinkClicked"
-          v-if="pluginLinkedFolder !== ''"
+          v-if="selectionState.pluginLinkedFolder !== ''"
           :class="
-            pluginLinkedFolder !== ''
+            selectionState.pluginLinkedFolder !== ''
               ? 'text-neutral-600 dark:text-neutral-300'
               : 'text-neutral-400'
           "
         >
           <BIconLink class="my-auto text-base" />
-          <span class="my-auto mr-1 select-none">{{ pluginLinkedFolder }}</span>
+          <span class="my-auto mr-1 select-none">{{
+            selectionState.pluginLinkedFolder
+          }}</span>
         </div>
       </div>
 
@@ -232,7 +230,7 @@ onMounted(() => {
             />
           </div>
         </div>
-        <div class="flex" v-if="pluginLinkedFolder !== ''">
+        <div class="flex" v-if="selectionState.pluginLinkedFolder !== ''">
           <span class="my-auto mr-1 select-none">All Refs</span>
           <div class="flex space-x-1">
             <BIconCommand class="my-auto" />

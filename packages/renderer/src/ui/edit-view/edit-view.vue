@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PropType, ref } from "vue";
+import { PropType, ref, watch } from "vue";
 
 import InputBox from "./components/input-box.vue";
 import InputField from "./components/input-field.vue";
@@ -11,7 +11,7 @@ import {
   PaperTag,
 } from "../../../../preload/models/PaperCategorizer";
 import { PaperEntityDraft } from "../../../../preload/models/PaperEntityDraft";
-import { PaperEntity } from "../../../../preload/models/PaperEntity";
+import { RendererStateStore } from "../../../../state/appstate";
 
 defineProps({
   tags: {
@@ -24,9 +24,19 @@ defineProps({
   },
 });
 
-const isEditViewShown = ref(false);
+const viewState = RendererStateStore.useViewState();
+const bufferState = RendererStateStore.useBufferState();
+
+const editingEntityDraft = ref<PaperEntityDraft>(new PaperEntityDraft(false));
+
+watch(
+  () => bufferState.editingEntityDraft,
+  (draft) => {
+    editingEntityDraft.value.initialize(draft);
+  }
+);
+
 const wideMode = ref(false);
-const entityDraft = ref(new PaperEntityDraft());
 
 const pubTypes = ["Article", "Conference", "Others", "Book"];
 
@@ -47,24 +57,22 @@ const keyDownListener = (e: KeyboardEvent) => {
   }
 };
 
-window.appInteractor.registerState("viewState.isEditViewShown", (value) => {
-  isEditViewShown.value = value as boolean;
-  if (isEditViewShown) {
-    window.addEventListener("keydown", keyDownListener, { once: true });
+watch(
+  () => viewState.isEditViewShown,
+  (value) => {
+    if (value) {
+      window.addEventListener("keydown", keyDownListener, { once: true });
+    }
   }
-});
-
-window.appInteractor.registerState("sharedData.editEntityDraft", (value) => {
-  entityDraft.value.initialize(JSON.parse(value as string) as PaperEntity);
-});
+);
 
 const onCloseClicked = () => {
-  window.appInteractor.setState("viewState.isEditViewShown", false);
+  viewState.isEditViewShown = false;
 };
 
 const onSaveClicked = async () => {
-  window.entityInteractor.update(JSON.stringify([entityDraft.value]));
-  window.appInteractor.setState("viewState.isEditViewShown", false);
+  window.entityInteractor.update(JSON.stringify([editingEntityDraft.value]));
+  viewState.isEditViewShown = false;
 };
 </script>
 
@@ -79,7 +87,7 @@ const onSaveClicked = async () => {
   >
     <div
       class="fixed top-0 right-0 left-0 z-50 w-screen h-screen bg-neutral-800 dark:bg-neutral-900 bg-opacity-50 dark:bg-opacity-80"
-      v-if="isEditViewShown"
+      v-if="viewState.isEditViewShown"
     >
       <div class="flex flex-col justify-center items-center w-full h-full">
         <div
@@ -93,68 +101,68 @@ const onSaveClicked = async () => {
             >
               <InputBox
                 placeholder="Title"
-                :value="entityDraft.title"
-                @changed="(value) => (entityDraft.title = value)"
+                :value="editingEntityDraft.title"
+                @changed="(value) => (editingEntityDraft.title = value)"
               />
               <InputBox
                 placeholder="Authors"
-                :value="entityDraft.authors"
-                @changed="(value) => (entityDraft.authors = value)"
+                :value="editingEntityDraft.authors"
+                @changed="(value) => (editingEntityDraft.authors = value)"
               />
               <InputBox
                 placeholder="Publication"
-                :value="entityDraft.publication"
-                @changed="(value) => (entityDraft.publication = value)"
+                :value="editingEntityDraft.publication"
+                @changed="(value) => (editingEntityDraft.publication = value)"
               />
               <div class="flex w-full space-x-2">
                 <InputBox
                   placeholder="Pub Time"
                   class="w-1/2"
-                  :value="entityDraft.pubTime"
-                  @changed="(value) => (entityDraft.pubTime = value)"
+                  :value="editingEntityDraft.pubTime"
+                  @changed="(value) => (editingEntityDraft.pubTime = value)"
                 />
                 <SelectBox
                   placeholder="Publication Type"
                   class="w-1/2"
                   :options="pubTypes"
-                  :value="pubTypes[entityDraft.pubType]"
+                  :value="pubTypes[editingEntityDraft.pubType]"
                   @changed="
                     (value) => {
-                      entityDraft.pubType = pubTypes.indexOf(value);
+                      editingEntityDraft.pubType = pubTypes.indexOf(value);
                     }
                   "
                 />
               </div>
               <div
                 class="flex flex-row space-x-2"
-                v-if="entityDraft.pubType === 0"
+                v-if="editingEntityDraft.pubType === 0"
               >
                 <div class="basis-1/2 flex space-x-2">
                   <InputBox
                     class="basis-1/2 w-8"
                     placeholder="Volumn"
-                    :value="entityDraft.volume"
-                    @changed="(value) => (entityDraft.volume = value)"
+                    :value="editingEntityDraft.volume"
+                    @changed="(value) => (editingEntityDraft.volume = value)"
                   />
                   <InputBox
                     class="basis-1/2 w-8"
                     placeholder="Pages"
-                    :value="entityDraft.pages"
-                    @changed="(value) => (entityDraft.pages = value)"
+                    :value="editingEntityDraft.pages"
+                    @changed="(value) => (editingEntityDraft.pages = value)"
                   />
                 </div>
                 <div class="basis-1/2 flex space-x-2">
                   <InputBox
                     class="basis-1/2 w-8"
                     placeholder="Number"
-                    :value="entityDraft.number"
-                    @changed="(value) => (entityDraft.number = value)"
+                    :value="editingEntityDraft.number"
+                    @changed="(value) => (editingEntityDraft.number = value)"
                   />
                   <InputBox
                     class="basis-1/2 w-8"
                     placeholder="Publisher"
-                    :value="entityDraft.publisher"
-                    @changed="(value) => (entityDraft.publisher = value)"
+                    :value="editingEntityDraft.publisher"
+                    @changed="(value) => (editingEntityDraft.publisher = value)"
                   />
                 </div>
               </div>
@@ -162,28 +170,28 @@ const onSaveClicked = async () => {
                 <InputBox
                   placeholder="arXiv ID"
                   class="w-1/2"
-                  :value="entityDraft.arxiv"
-                  @changed="(value) => (entityDraft.arxiv = value)"
+                  :value="editingEntityDraft.arxiv"
+                  @changed="(value) => (editingEntityDraft.arxiv = value)"
                 />
                 <InputBox
                   placeholder="DOI"
                   class="w-1/2"
-                  :value="entityDraft.doi"
-                  @changed="(value) => (entityDraft.doi = value)"
+                  :value="editingEntityDraft.doi"
+                  @changed="(value) => (editingEntityDraft.doi = value)"
                 />
               </div>
               <MultiselectBox
                 placeholder="Tags"
                 :options="tags.map((tag) => tag.name)"
                 :existValues="
-                  entityDraft.tags
+                  editingEntityDraft.tags
                     .split(';')
                     .map((tag) => tag.replaceAll(' ', ''))
                     .filter((tag) => tag.length > 0)
                 "
                 @changed="
               (values) => {
-                entityDraft.tags = values.map((tag: string) => tag.trim()).join('; ');
+                editingEntityDraft.tags = values.map((tag: string) => tag.trim()).join('; ');
               }
             "
               />
@@ -191,23 +199,23 @@ const onSaveClicked = async () => {
                 placeholder="Folders"
                 :options="folders.map((folder) => folder.name)"
                 :existValues="
-                  entityDraft.folders
+                  editingEntityDraft.folders
                     .split(';')
                     .map((folder) => folder.replaceAll(' ', ''))
                     .filter((folder) => folder.length > 0)
                 "
                 @changed="
               (values) => {
-                entityDraft.folders = values.map((folder: string) => folder.trim()).join('; ');
+                editingEntityDraft.folders = values.map((folder: string) => folder.trim()).join('; ');
               }
             "
               />
               <InputField
                 placeholder="Note"
                 class="h-28"
-                :value="entityDraft.note"
+                :value="editingEntityDraft.note"
                 :is-expanded="wideMode"
-                @changed="(value) => (entityDraft.note = value)"
+                @changed="(value) => (editingEntityDraft.note = value)"
                 v-if="!wideMode"
                 @expand="(expanded) => (wideMode = expanded)"
               />
@@ -217,9 +225,9 @@ const onSaveClicked = async () => {
               <InputField
                 placeholder="Note (start with '<md>' to use markdown)"
                 class="h-full w-full"
-                :value="entityDraft.note"
+                :value="editingEntityDraft.note"
                 :is-expanded="wideMode"
-                @changed="(value) => (entityDraft.note = value)"
+                @changed="(value) => (editingEntityDraft.note = value)"
                 v-if="wideMode"
                 @expand="(expanded) => (wideMode = expanded)"
               />

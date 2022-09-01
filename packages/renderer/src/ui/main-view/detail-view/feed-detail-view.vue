@@ -9,6 +9,7 @@ import Section from "./components/section.vue";
 import Authors from "./components/authors.vue";
 import PubDetails from "./components/pub-details.vue";
 import Spinner from "../../sidebar-view/components/spinner.vue";
+import { RendererStateStore } from "../../../../../state/appstate";
 
 const props = defineProps({
   feedEntity: {
@@ -20,6 +21,8 @@ const props = defineProps({
     required: true,
   },
 });
+
+const selectionState = RendererStateStore.useSelectionState();
 
 const emits = defineEmits([
   "add-clicked",
@@ -47,10 +50,7 @@ const debounce = (fn: Function, delay: number) => {
 };
 
 const onReadTimeout = () => {
-  if (
-    window.appInteractor.getState("selectionState.selectedFeed") !==
-    "feed-unread"
-  ) {
+  if (selectionState.selectedFeed !== "feed-unread") {
     debounce(() => {
       emits("read-timeout");
     }, 2000)();

@@ -17,10 +17,7 @@ import { migrate } from "./db-migration";
 import { DBRepository } from "./db-repository";
 
 export async function initRealm(this: DBRepository, reinit = false) {
-  this.sharedState.set(
-    "viewState.processingQueueCount",
-    (this.sharedState.viewState.processingQueueCount.value as number) + 1
-  );
+  this.stateStore.viewState.processingQueueCount.value += 1;
   this.stateStore.logState.processLog.value = "Initialize database...";
 
   if (this._realm || reinit) {
@@ -81,10 +78,8 @@ export async function initRealm(this: DBRepository, reinit = false) {
       }`;
     }
   }
-  this.sharedState.set(
-    "viewState.processingQueueCount",
-    (this.sharedState.viewState.processingQueueCount.value as number) - 1
-  );
+
+  this.stateStore.viewState.processingQueueCount.value -= 1;
 
   // @ts-ignore
   this._realm.safeWrite = (callback) => {
@@ -164,7 +159,7 @@ export async function getCloudConfig(
         partitionValue: cloudUser.id,
       },
       path: path.join(
-        this.sharedState.dbState.defaultPath.value as string,
+        this.stateStore.dbState.defaultPath.value,
         "synced.realm"
       ),
     };
@@ -172,7 +167,7 @@ export async function getCloudConfig(
     return config;
   } else {
     this.preference.set("useSync", false);
-    this.sharedState.set("viewState.preferenceUpdated", Date.now());
+    this.stateStore.viewState.preferenceUpdated.value = Date.now();
     return this.getLocalConfig();
   }
 }
@@ -181,7 +176,7 @@ export async function loginCloud(
   this: DBRepository
 ): Promise<Realm.User | null> {
   if (!this.app) {
-    process.chdir(this.sharedState.dbState.defaultPath.value as string);
+    process.chdir(this.stateStore.dbState.defaultPath.value);
 
     const id = this.preference.get("syncAPPID") as string;
     this.app = new Realm.App({
@@ -210,7 +205,7 @@ export async function loginCloud(
     return this.app.currentUser;
   } catch (error) {
     this.preference.set("useSync", false);
-    this.sharedState.set("viewState.preferenceUpdated", Date.now());
+    this.stateStore.viewState.preferenceUpdated.value = Date.now();
     this.stateStore.logState.alertLog.value = `Login failed, ${
       error as string
     }`;
@@ -227,16 +222,13 @@ export async function logoutCloud(this: DBRepository) {
     }
   }
   const syncDBPath = path.join(
-    this.sharedState.dbState.defaultPath.value as string,
+    this.stateStore.dbState.defaultPath.value,
     "synced.realm"
   );
 
   if (existsSync(syncDBPath)) {
     await fsPromise.unlink(
-      path.join(
-        this.sharedState.dbState.defaultPath.value as string,
-        "synced.realm"
-      )
+      path.join(this.stateStore.dbState.defaultPath.value, "synced.realm")
     );
   }
 }

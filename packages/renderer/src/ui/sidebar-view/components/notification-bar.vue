@@ -8,16 +8,16 @@ import {
 import { RendererStateStore } from "../../../../../state/appstate";
 
 const logState = RendererStateStore.useLogState();
+const viewState = RendererStateStore.useViewState();
 
 const isShown = ref(false);
 const isHistoryShown = ref(false);
 const historyMsgs = ref([]) as Ref<Array<Record<string, string | boolean>>>;
 
-window.appInteractor.registerState(
-  "viewState.processingQueueCount",
+watch(
+  () => viewState.processingQueueCount,
   (value) => {
-    const processingQueueCount = JSON.parse(value as string) as number;
-    if (processingQueueCount > 0) {
+    if (value > 0) {
       isShown.value = true;
     } else {
       isShown.value = false;

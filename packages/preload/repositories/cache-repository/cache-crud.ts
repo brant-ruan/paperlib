@@ -31,7 +31,7 @@ export async function update(this: CacheRepository, entities: PaperEntity[]) {
   );
 
   if (newObjs.length > 3) {
-    this.sharedState.set("viewState.processingQueueCount", newObjs.length);
+    this.stateStore.viewState.processingQueueCount.value += newObjs.length;
     this.stateStore.logState.processLog.value = `Indexing ${newObjs.length} papers, please wait for a while...`;
   }
 
@@ -58,11 +58,7 @@ export async function update(this: CacheRepository, entities: PaperEntity[]) {
     });
   }
 
-  this.sharedState.set(
-    "viewState.processingQueueCount",
-    (this.sharedState.viewState.processingQueueCount.get() as number) -
-      newObjs.length
-  );
+  this.stateStore.viewState.processingQueueCount.value -= newObjs.length;
 }
 
 export async function getPDFText(

@@ -1,7 +1,6 @@
 import { parse } from "node-html-parser";
 
 import { WebContentType, WebImporter } from "./importer";
-import { SharedState } from "../../../utils/appstate";
 import { PreloadStateStore } from "../../../../state/appstate";
 import { Preference } from "../../../utils/preference";
 import { safeGot } from "../../../utils/got";
@@ -10,13 +9,9 @@ import { downloadPDFs } from "../../../utils/got";
 import { bibtex2entityDraft, bibtex2json } from "../../../utils/bibtex";
 
 export class GoogleScholarWebImporter extends WebImporter {
-  constructor(
-    sharedState: SharedState,
-    stateStore: PreloadStateStore,
-    preference: Preference
-  ) {
+  constructor(stateStore: PreloadStateStore, preference: Preference) {
     const urlRegExp = new RegExp("^https?://scholar.google.com");
-    super(sharedState, stateStore, preference, urlRegExp);
+    super(stateStore, preference, urlRegExp);
   }
 
   async parsingProcess(

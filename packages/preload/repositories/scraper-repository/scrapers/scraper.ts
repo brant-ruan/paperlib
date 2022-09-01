@@ -4,7 +4,6 @@ import { HttpProxyAgent, HttpsProxyAgent } from "hpagent";
 import { PDFFileResponseType } from "./pdf";
 import { PaperEntityDraft } from "../../../models/PaperEntityDraft";
 import { Preference, ScraperPreference } from "../../../utils/preference";
-import { SharedState } from "../../../utils/appstate";
 import { PreloadStateStore } from "../../../../state/appstate";
 
 export interface ScraperRequestType {
@@ -27,16 +26,10 @@ export interface ScraperType {
 }
 
 export class Scraper implements ScraperType {
-  sharedState: SharedState;
   stateStore: PreloadStateStore;
   preference: Preference;
 
-  constructor(
-    sharedState: SharedState,
-    stateStore: PreloadStateStore,
-    preference: Preference
-  ) {
-    this.sharedState = sharedState;
+  constructor(stateStore: PreloadStateStore, preference: Preference) {
     this.stateStore = stateStore;
     this.preference = preference;
   }

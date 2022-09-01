@@ -1,7 +1,6 @@
 import got, { Response } from "got";
 
 import { Preference, ScraperPreference } from "../../../utils/preference";
-import { SharedState } from "../../../utils/appstate";
 import { PreloadStateStore } from "../../../../state/appstate";
 import { Scraper, ScraperRequestType, ScraperType } from "./scraper";
 import { PaperEntityDraft } from "../../../models/PaperEntityDraft";
@@ -10,12 +9,11 @@ export class CustomScraper extends Scraper {
   name = "";
 
   constructor(
-    sharedState: SharedState,
     stateStore: PreloadStateStore,
     preference: Preference,
     name: string
   ) {
-    super(sharedState, stateStore, preference);
+    super(stateStore, preference);
 
     this.name = name;
   }

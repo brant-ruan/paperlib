@@ -5,7 +5,6 @@ import {
 } from "./downloader";
 import { PaperEntityDraft } from "../../../models/PaperEntityDraft";
 import { Preference, DownloaderPreference } from "../../../utils/preference";
-import { SharedState } from "../../../utils/appstate";
 import { downloadPDFs } from "../../../utils/got";
 import { PreloadStateStore } from "../../../../state/appstate";
 
@@ -13,12 +12,11 @@ export class CustomDownloader extends Downloader {
   name = "";
 
   constructor(
-    sharedState: SharedState,
     stateStore: PreloadStateStore,
     preference: Preference,
     name: string
   ) {
-    super(sharedState, stateStore, preference);
+    super(stateStore, preference);
 
     this.name = name;
   }

@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, watch } from "vue";
 
 import { BIconSearch, BIconQuestionCircle, BIconX } from "bootstrap-icons-vue";
 import { debounce } from "../../../../utils/debounce";
+import { RendererStateStore } from "../../../../../../state/appstate";
+
+const viewState = RendererStateStore.useViewState();
 
 const searchText = ref("");
-const searchMode = ref("general");
 const searchModeLabel: Record<string, string> = {
   general: "General Mode",
   advanced: "Advanced Mode",
@@ -14,48 +16,47 @@ const searchModeLabel: Record<string, string> = {
 const searchDebounce = ref(300);
 
 const onSearchTextChanged = debounce(() => {
-  window.appInteractor.setState("viewState.searchText", `${searchText.value}`);
+  viewState.searchText = `${searchText.value}`;
 }, searchDebounce.value);
 
 const onInput = (payload: Event) => {
-  if (searchMode.value === "advanced") {
+  if (viewState.searchMode === "advanced") {
     return;
   }
   onSearchTextChanged();
 };
 
 const onSubmit = (payload: Event) => {
-  if (searchMode.value !== "advanced") {
+  if (viewState.searchMode !== "advanced") {
     return;
   }
   onSearchTextChanged();
 };
 
 const onModeClicked = (payload: Event) => {
-  if (searchMode.value === "general") {
-    window.appInteractor.setState("viewState.searchMode", "fulltext");
+  if (viewState.searchMode === "general") {
+    viewState.searchMode = "fulltext";
     searchDebounce.value = 300;
-  } else if (searchMode.value === "fulltext") {
-    window.appInteractor.setState("viewState.searchMode", "advanced");
+  } else if (viewState.searchMode === "fulltext") {
+    viewState.searchMode = "advanced";
     searchDebounce.value = 800;
-  } else if (searchMode.value === "advanced") {
-    window.appInteractor.setState("viewState.searchMode", "general");
+  } else if (viewState.searchMode === "advanced") {
+    viewState.searchMode = "general";
     searchDebounce.value = 300;
   }
 };
 
 const onClearClicked = (payload: Event) => {
-  searchText.value = "";
+  viewState.searchText = "";
   onSearchTextChanged();
 };
 
-window.appInteractor.registerState("viewState.searchMode", (value) => {
-  searchMode.value = value as string;
-});
-
-window.appInteractor.registerState("viewState.searchText", (value) => {
-  searchText.value = value as string;
-});
+watch(
+  () => viewState.searchText,
+  (value) => {
+    searchText.value = value as string;
+  }
+);
 </script>
 
 <template>
@@ -74,7 +75,7 @@ window.appInteractor.registerState("viewState.searchText", (value) => {
     <div class="my-auto invisible peer-focus:visible">
       <BIconQuestionCircle
         class="text-neutral-400 dark:text-neutral-500 hover:text-neutral-800 hover:dark:text-neutral-300 cursor-pointer peer"
-        v-if="searchMode === 'advanced'"
+        v-if="viewState.searchMode === 'advanced'"
       />
       <div
         class="absolute text-xxs p-4 bg-neutral-100 dark:bg-neutral-800 rounded-md shadow-lg z-50 invisible peer-hover:visible"
@@ -117,7 +118,7 @@ window.appInteractor.registerState("viewState.searchText", (value) => {
       class="flex-none my-auto p-2 w-[100px] text-xxs bg-neutral-200 dark:bg-neutral-600 text-neutral-500 dark:text-neutral-200 rounded-r-md invisible peer-focus:visible hover:visible hover:bg-neutral-300 hover:dark:bg-neutral-500"
       @click="onModeClicked"
     >
-      {{ searchModeLabel[searchMode] }}
+      {{ searchModeLabel[viewState.searchMode] }}
     </button>
   </div>
 </template>

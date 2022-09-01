@@ -1,7 +1,6 @@
 import Realm from "realm";
 
 import { Preference } from "../../utils/preference";
-import { SharedState } from "../../utils/appstate";
 import { PreloadStateStore } from "../../../state/appstate";
 
 import {
@@ -31,6 +30,7 @@ import {
   createFeedFilterPattern,
   feeds,
   feedEntities,
+  feedEntitiesByIds,
   deleteFeeds,
   deleteOutdatedFeedEntities,
   updateFeeds,
@@ -40,7 +40,6 @@ import {
 import { migrateLocaltoCloud } from "./db-migration";
 
 export class DBRepository {
-  sharedState: SharedState;
   stateStore: PreloadStateStore;
   preference: Preference;
 
@@ -58,12 +57,7 @@ export class DBRepository {
   feedsListenerInited: boolean;
   feedEntitiesListenerInited: boolean;
 
-  constructor(
-    sharedState: SharedState,
-    stateStore: PreloadStateStore,
-    preference: Preference
-  ) {
-    this.sharedState = sharedState;
+  constructor(stateStore: PreloadStateStore, preference: Preference) {
     this.stateStore = stateStore;
     this.preference = preference;
 
@@ -115,6 +109,7 @@ export class DBRepository {
   update = update;
 
   // Feeds CURD Func
+  feedEntitiesByIds = feedEntitiesByIds;
   createFeedFilterPattern = createFeedFilterPattern;
   feeds = feeds;
   feedEntities = feedEntities;

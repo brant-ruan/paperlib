@@ -9,12 +9,17 @@ import {
 
 import { onMounted, watch, ref } from "vue";
 
+import { RendererStateStore } from "../../../../../../state/appstate";
+
 const props = defineProps({
   url: {
     type: String,
     required: true,
   },
 });
+
+const viewState = RendererStateStore.useViewState();
+const logState = RendererStateStore.useLogState();
 
 const emit = defineEmits(["modifyMainFile", "locateMainFile"]);
 
@@ -63,11 +68,7 @@ const onCloudDownloadClicked = async () => {
   const fileURL = await window.appInteractor.access(props.url, true);
   isRendering.value = false;
   if (fileURL === "") {
-    // TODO: show error message
-    window.appInteractor.setState(
-      "viewState.alertInformation",
-      `File ${props.url} download faield.`
-    );
+    logState.alertLog = `File ${props.url} download faield.`;
     return;
   } else {
     render();
@@ -88,9 +89,12 @@ window.appInteractor.registerMainSignal(
   }
 );
 
-window.appInteractor.registerState("viewState.renderRequired", () => {
-  render();
-});
+watch(
+  () => viewState.renderRequired,
+  () => {
+    render();
+  }
+);
 
 onMounted(() => {
   render();

@@ -12,6 +12,7 @@ import NotificationBar from "./components/notification-bar.vue";
 
 import SidebarLibraryView from "./sidebar-library-view.vue";
 import SidebarFeedsView from "./sidebar-feeds-view.vue";
+import { RendererStateStore } from "../../../../state/appstate";
 
 const props = defineProps({
   tags: Array as () => Array<PaperTag>,
@@ -21,21 +22,18 @@ const props = defineProps({
   compact: Boolean,
 });
 
+const viewState = RendererStateStore.useViewState();
+const selectionState = RendererStateStore.useSelectionState();
 const selectedView = ref(0);
 
 const onViewSwitch = (view: number) => {
   selectedView.value = view;
-  window.appInteractor.setState(
-    "viewState.contentType",
-    ["library", "feed"][view]
-  );
+  viewState.contentType = ["library", "feed"][view];
+
   if (view === 0) {
-    window.appInteractor.setState(
-      "selectionState.selectedCategorizer",
-      "lib-all"
-    );
+    selectionState.selectedCategorizer = "lib-all";
   } else {
-    window.appInteractor.setState("selectionState.selectedFeed", "feed-all");
+    selectionState.selectedFeed = "feed-all";
   }
 };
 </script>

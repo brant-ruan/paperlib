@@ -9,23 +9,16 @@ import { PaperEntityDraft } from "../../../models/PaperEntityDraft";
 import { promises as fsPromise, readFileSync, existsSync, mkdirSync } from "fs";
 
 import { Preference } from "../../../utils/preference";
-import { SharedState } from "../../../utils/appstate";
 import { PreloadStateStore } from "../../../../state/appstate";
 import { constructFileURL } from "../../../utils/path";
 
 export class WebDavFileBackend implements FileBackend {
-  sharedState: SharedState;
   stateStore: PreloadStateStore;
   preference: Preference;
 
   webdavClient: WebDAVClient | null;
 
-  constructor(
-    sharedState: SharedState,
-    stateStore: PreloadStateStore,
-    preference: Preference
-  ) {
-    this.sharedState = sharedState;
+  constructor(stateStore: PreloadStateStore, preference: Preference) {
     this.stateStore = stateStore;
     this.preference = preference;
 
@@ -77,7 +70,7 @@ export class WebDavFileBackend implements FileBackend {
 
     try {
       const content = await this.webdavClient.getDirectoryContents("/");
-      this.sharedState.set("viewState.syncFileStorageAvaliable", true);
+      this.stateStore.viewState.syncFileStorageAvaliable.value = true;
       return true;
     } catch (error) {
       console.log(error);

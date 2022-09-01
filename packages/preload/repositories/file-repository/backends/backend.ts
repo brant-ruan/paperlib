@@ -1,10 +1,8 @@
 import { PaperEntityDraft } from "../../../models/PaperEntityDraft";
-import { SharedState } from "../../../utils/appstate";
 import { PreloadStateStore } from "../../../../state/appstate";
 import { Preference } from "../../../utils/preference";
 
 export interface FileBackend {
-  sharedState: SharedState;
   stateStore: PreloadStateStore;
   preference: Preference;
 

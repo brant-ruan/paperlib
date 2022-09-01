@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import "splitpanes/dist/splitpanes.css";
-import { nextTick, onBeforeMount, onMounted, Ref, ref } from "vue";
+import { nextTick, onBeforeMount, onMounted, Ref, ref, watch } from "vue";
 
 import { PaperCategorizer } from "../../../preload/models/PaperCategorizer";
 import { PaperEntity } from "../../../preload/models/PaperEntity";
@@ -16,21 +16,17 @@ import ModalView from "./modal-view.vue";
 
 import { PreferenceStore } from "../../../preload/utils/preference";
 
-const sortBy = ref(window.appInteractor.getState("viewState.sortBy") as string);
-const sortOrder = ref(
-  window.appInteractor.getState("viewState.sortOrder") as string
-);
-const contentType = ref("library");
+import { RendererStateStore } from "../../../state/appstate";
+
+const viewState = RendererStateStore.useViewState();
+const dbState = RendererStateStore.useDBState();
+const selectionState = RendererStateStore.useSelectionState();
 
 const entities: Ref<PaperEntity[]> = ref([]);
 const tags: Ref<PaperCategorizer[]> = ref([]);
 const folders: Ref<PaperCategorizer[]> = ref([]);
 const feeds: Ref<Feed[]> = ref([]);
 const feedEntities: Ref<FeedEntity[]> = ref([]);
-
-const searchText = ref("");
-const selectedCategorizer = ref("lib-all");
-const selectedFeed = ref("feed-all");
 
 const preference: Ref<PreferenceStore> = ref(
   window.appInteractor.loadPreferences()
@@ -63,20 +59,20 @@ const reloadEntities = async () => {
   let flaged = false;
   let tag = "";
   let folder = "";
-  if (selectedCategorizer.value.startsWith("tag-")) {
-    tag = selectedCategorizer.value.replace("tag-", "");
-  } else if (selectedCategorizer.value.startsWith("folder-")) {
-    folder = selectedCategorizer.value.replace("folder-", "");
-  } else if (selectedCategorizer.value === "lib-flaged") {
+  if (selectionState.selectedCategorizer.startsWith("tag-")) {
+    tag = selectionState.selectedCategorizer.replace("tag-", "");
+  } else if (selectionState.selectedCategorizer.startsWith("folder-")) {
+    folder = selectionState.selectedCategorizer.replace("folder-", "");
+  } else if (selectionState.selectedCategorizer === "lib-flaged") {
     flaged = true;
   }
   const results = await window.entityInteractor.loadEntities(
-    searchText.value,
+    viewState.searchText,
     flaged,
     tag,
     folder,
-    sortBy.value,
-    sortOrder.value
+    viewState.sortBy,
+    viewState.sortOrder
   );
   entities.value = results;
 };
@@ -110,38 +106,29 @@ const reloadFeeds = async () => {
 const reloadFeedEntities = async () => {
   let selectedFeedName;
   let unread = false;
-  if (selectedFeed.value === "feed-all") {
+  if (selectionState.selectedFeed === "feed-all") {
     selectedFeedName = "";
-  } else if (selectedFeed.value === "feed-unread") {
+  } else if (selectionState.selectedFeed === "feed-unread") {
     unread = true;
     selectedFeedName = "";
   } else {
-    selectedFeedName = selectedFeed.value.replace("feed-", "");
+    selectedFeedName = selectionState.selectedFeed.replace("feed-", "");
   }
   const results = await window.feedInteractor.loadFeedEntities(
-    searchText.value,
+    viewState.searchText,
     selectedFeedName,
     unread,
-    sortBy.value,
-    sortOrder.value
+    viewState.sortBy,
+    viewState.sortOrder
   );
   feedEntities.value = results;
 };
 
-const onShowModal = () => {
-  window.appInteractor.setState("viewState.isModalShown", true);
-};
-
 const onDeleteSelected = () => {
-  const ids = JSON.parse(
-    window.appInteractor.getState("selectionState.selectedIds") as string
-  );
-  window.appInteractor.setState(
-    "selectionState.selectedIndex",
-    JSON.stringify([])
-  );
-  void window.entityInteractor.delete(ids);
-  window.appInteractor.setState("viewState.isModalShown", false);
+  const ids = selectionState.selectedIds;
+  selectionState.selectedIndex = [];
+  void window.entityInteractor.delete(ids as string[]);
+  viewState.isModalShown = false;
 };
 
 // =======================================
@@ -179,93 +166,122 @@ const setupTheme = () => {
 // =======================================
 // State Update
 
-window.appInteractor.registerState("dbState.entitiesUpdated", (value) => {
-  reloadEntities();
-});
-
-window.appInteractor.registerState("dbState.tagsUpdated", (value) => {
-  reloadTags();
-});
-
-window.appInteractor.registerState("dbState.foldersUpdated", (value) => {
-  reloadFolders();
-});
-
-window.appInteractor.registerState("dbState.feedsUpdated", (value) => {
-  reloadFeeds();
-});
-
-window.appInteractor.registerState("dbState.feedEntitiesUpdated", (value) => {
-  reloadFeedEntities();
-});
-
-window.appInteractor.registerState("viewState.sortBy", (value) => {
-  sortBy.value = value as string;
-  if (contentType.value === "library") {
-    reloadEntities();
-  } else if (contentType.value === "feed") {
-    reloadFeedEntities();
-  }
-});
-
-window.appInteractor.registerState("viewState.sortOrder", (value) => {
-  sortOrder.value = value as string;
-  if (contentType.value === "library") {
-    reloadEntities();
-  } else if (contentType.value === "feed") {
-    reloadFeedEntities();
-  }
-});
-
-window.appInteractor.registerState("viewState.contentType", (value) => {
-  contentType.value = value as string;
-
-  if (contentType.value === "library") {
-    reloadEntities();
-  } else if (contentType.value === "feed") {
-    reloadFeedEntities();
-  }
-});
-
-window.appInteractor.registerState("viewState.searchText", (value) => {
-  searchText.value = value as string;
-  if (contentType.value === "library") {
-    reloadEntities();
-  } else if (contentType.value === "feed") {
-    reloadFeedEntities();
-  }
-});
-
-window.appInteractor.registerState(
-  "selectionState.selectedCategorizer",
+watch(
+  () => dbState.entitiesUpdated,
   (value) => {
-    selectedCategorizer.value = value as string;
     reloadEntities();
   }
 );
 
-window.appInteractor.registerState("selectionState.selectedFeed", (value) => {
-  selectedFeed.value = value as string;
-  reloadFeedEntities();
-});
+watch(
+  () => dbState.tagsUpdated,
+  (value) => {
+    reloadTags();
+  }
+);
 
-window.appInteractor.registerState("viewState.preferenceUpdated", (value) => {
-  reloadPreference();
-});
+watch(
+  () => dbState.foldersUpdated,
+  (value) => {
+    reloadFolders();
+  }
+);
 
-window.appInteractor.registerState("viewState.realmReinited", (value) => {
-  (async () => {
-    if (contentType.value === "library") {
+watch(
+  () => dbState.feedsUpdated,
+  (value) => {
+    reloadFeeds();
+  }
+);
+
+watch(
+  () => dbState.feedEntitiesUpdated,
+  (value) => {
+    reloadFeedEntities();
+  }
+);
+
+watch(
+  () => viewState.sortBy,
+  (value) => {
+    if (viewState.contentType === "library") {
       reloadEntities();
-    } else if (contentType.value === "feed") {
+    } else if (viewState.contentType === "feed") {
       reloadFeedEntities();
     }
-    await reloadTags();
-    await reloadFolders();
-    await reloadFeeds();
+  }
+);
+
+watch(
+  () => viewState.sortOrder,
+  (value) => {
+    if (viewState.contentType === "library") {
+      reloadEntities();
+    } else if (viewState.contentType === "feed") {
+      reloadFeedEntities();
+    }
+  }
+);
+
+watch(
+  () => viewState.contentType,
+  (value) => {
+    if (value === "library") {
+      reloadEntities();
+    } else if (value === "feed") {
+      reloadFeedEntities();
+    }
+  }
+);
+
+watch(
+  () => viewState.searchText,
+  (value) => {
+    if (viewState.contentType === "library") {
+      reloadEntities();
+    } else if (viewState.contentType === "feed") {
+      reloadFeedEntities();
+    }
+  }
+);
+
+watch(
+  () => selectionState.selectedCategorizer,
+  (value) => {
+    reloadEntities();
+  }
+);
+
+watch(
+  () => selectionState.selectedFeed,
+  (value) => {
+    reloadFeedEntities();
+  }
+);
+
+watch(
+  () => viewState.preferenceUpdated,
+  (value) => {
     reloadPreference();
-  })();
-});
+  }
+);
+
+watch(
+  () => viewState.realmReinited,
+  (value) => {
+    (async () => {
+      if (viewState.contentType === "library") {
+        reloadEntities();
+      } else if (viewState.contentType === "feed") {
+        reloadFeedEntities();
+      }
+      await reloadTags();
+      await reloadFolders();
+      await reloadFeeds();
+      reloadPreference();
+    })();
+  }
+);
 
 window.appInteractor.registerMainSignal("window-lost-focus", (_: any) => {
   void window.appInteractor.pauseSync();
@@ -332,7 +348,6 @@ onMounted(async () => {
           :show-main-folders="showMainFolders"
           :show-main-rating="showMainRating"
           :show-main-note="showMainNote"
-          @delete="onShowModal"
         />
       </pane>
     </splitpanes>

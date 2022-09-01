@@ -3,7 +3,6 @@ import path from "path";
 import { ToadScheduler, SimpleIntervalJob, Task } from "toad-scheduler";
 import { readFileSync } from "fs";
 
-import { SharedState } from "../utils/appstate";
 import { PreloadStateStore } from "../../state/appstate";
 import { Preference } from "../utils/preference";
 import { bibtex2entityDraft, bibtex2json } from "../utils/bibtex";
@@ -19,7 +18,6 @@ import { Categorizers } from "../models/PaperCategorizer";
 import { PaperEntityDraft } from "../models/PaperEntityDraft";
 
 export class EntityInteractor {
-  sharedState: SharedState;
   stateStore: PreloadStateStore;
   preference: Preference;
 
@@ -33,7 +31,6 @@ export class EntityInteractor {
   scheduler: ToadScheduler;
 
   constructor(
-    sharedState: SharedState,
     stateStore: PreloadStateStore,
     preference: Preference,
     dbRepository: DBRepository,
@@ -43,7 +40,6 @@ export class EntityInteractor {
     referenceRepository: ReferenceRepository,
     downloaderRepository: DownloaderRepository
   ) {
-    this.sharedState = sharedState;
     this.stateStore = stateStore;
     this.preference = preference;
 
@@ -66,18 +62,25 @@ export class EntityInteractor {
     tag: string,
     folder: string,
     sortBy: string,
-    sortOrder: string
+    sortOrder: string,
+    ids: string[] = []
   ) {
-    let entities = await this.dbRepository.entities(
-      search,
-      flag,
-      tag,
-      folder,
-      sortBy,
-      sortOrder
-    );
-    if (this.sharedState.viewState.searchMode.get() === "fulltext" && search) {
-      entities = await this.cacheRepository.fullTextFilter(search, entities);
+    let entities;
+
+    if (ids.length > 0) {
+      entities = await this.dbRepository.entitiesByIds(ids);
+    } else {
+      entities = await this.dbRepository.entities(
+        search,
+        flag,
+        tag,
+        folder,
+        sortBy,
+        sortOrder
+      );
+      if (this.stateStore.viewState.searchMode.value === "fulltext" && search) {
+        entities = await this.cacheRepository.fullTextFilter(search, entities);
+      }
     }
 
     return entities;
@@ -98,11 +101,7 @@ export class EntityInteractor {
   // ============================================================
   // Create
   async add(urlList: string[]) {
-    this.sharedState.set(
-      "viewState.processingQueueCount",
-      (this.sharedState.viewState.processingQueueCount.value as number) +
-        urlList.length
-    );
+    this.stateStore.viewState.processingQueueCount.value += urlList.length;
 
     try {
       const pdfUrls = urlList.filter((url) => path.extname(url) === ".pdf");
@@ -171,11 +170,7 @@ export class EntityInteractor {
       }`;
     }
 
-    this.sharedState.set(
-      "viewState.processingQueueCount",
-      (this.sharedState.viewState.processingQueueCount.value as number) -
-        urlList.length
-    );
+    this.stateStore.viewState.processingQueueCount.value -= urlList.length;
   }
 
   async addToCategorizer(
@@ -183,11 +178,7 @@ export class EntityInteractor {
     categorizerName: string,
     categorizerType: Categorizers
   ) {
-    this.sharedState.set(
-      "viewState.processingQueueCount",
-      (this.sharedState.viewState.processingQueueCount.value as number) +
-        urlList.length
-    );
+    this.stateStore.viewState.processingQueueCount.value += urlList.length;
 
     try {
       // 1. Metadata scraping.
@@ -242,11 +233,7 @@ export class EntityInteractor {
       }`;
     }
 
-    this.sharedState.set(
-      "viewState.processingQueueCount",
-      (this.sharedState.viewState.processingQueueCount.value as number) -
-        urlList.length
-    );
+    this.stateStore.viewState.processingQueueCount.value -= urlList.length;
   }
 
   async addWholeFolder(folder: string) {
@@ -311,10 +298,7 @@ export class EntityInteractor {
       return draft;
     });
 
-    this.sharedState.set(
-      "viewState.processingQueueCount",
-      (this.sharedState.viewState.processingQueueCount.get() as number) + 1
-    );
+    this.stateStore.viewState.processingQueueCount.value += 1;
 
     const scrapePromise = async (entityDraft: PaperEntityDraft) => {
       return await this.scraperRepository.scrape(entityDraft);
@@ -324,10 +308,7 @@ export class EntityInteractor {
       entityDrafts.map((entityDraft) => scrapePromise(entityDraft))
     );
 
-    this.sharedState.set(
-      "viewState.processingQueueCount",
-      (this.sharedState.viewState.processingQueueCount.get() as number) - 1
-    );
+    this.stateStore.viewState.processingQueueCount.value -= 1;
     await this.update(JSON.stringify(entityDrafts));
   }
 
@@ -339,11 +320,7 @@ export class EntityInteractor {
       return draft;
     });
 
-    this.sharedState.set(
-      "viewState.processingQueueCount",
-      (this.sharedState.viewState.processingQueueCount.get() as number) +
-        entityDrafts.length
-    );
+    this.stateStore.viewState.processingQueueCount.value += entityDrafts.length;
 
     const scrapePromise = async (entityDraft: PaperEntityDraft) => {
       return await this.scraperRepository.scrapeFrom(entityDraft, scraperName);
@@ -353,11 +330,8 @@ export class EntityInteractor {
       entityDrafts.map((entityDraft) => scrapePromise(entityDraft))
     );
 
-    this.sharedState.set(
-      "viewState.processingQueueCount",
-      (this.sharedState.viewState.processingQueueCount.get() as number) -
-        entityDrafts.length
-    );
+    this.stateStore.viewState.processingQueueCount.value -= entityDrafts.length;
+
     await this.update(JSON.stringify(entityDrafts));
   }
 
@@ -369,11 +343,7 @@ export class EntityInteractor {
       return draft;
     });
 
-    this.sharedState.set(
-      "viewState.processingQueueCount",
-      (this.sharedState.viewState.processingQueueCount.get() as number) +
-        entityDrafts.length
-    );
+    this.stateStore.viewState.processingQueueCount.value += entityDrafts.length;
 
     try {
       const updatePromise = async (entityDrafts: PaperEntityDraft[]) => {
@@ -399,11 +369,7 @@ export class EntityInteractor {
       }`;
     }
 
-    this.sharedState.set(
-      "viewState.processingQueueCount",
-      (this.sharedState.viewState.processingQueueCount.get() as number) -
-        entityDrafts.length
-    );
+    this.stateStore.viewState.processingQueueCount.value -= entityDrafts.length;
   }
 
   async updateWithCategorizer(
@@ -411,11 +377,7 @@ export class EntityInteractor {
     categorizerName: string,
     categorizerType: Categorizers
   ) {
-    this.sharedState.set(
-      "viewState.processingQueueCount",
-      (this.sharedState.viewState.processingQueueCount.get() as number) +
-        ids.length
-    );
+    this.stateStore.viewState.processingQueueCount.value += ids.length;
 
     try {
       // 1. Get Entities by IDs.
@@ -453,11 +415,7 @@ export class EntityInteractor {
       }`;
     }
 
-    this.sharedState.set(
-      "viewState.processingQueueCount",
-      (this.sharedState.viewState.processingQueueCount.value as number) -
-        ids.length
-    );
+    this.stateStore.viewState.processingQueueCount.value -= ids.length;
   }
 
   async renameAll() {
@@ -475,11 +433,7 @@ export class EntityInteractor {
       return draft;
     });
 
-    this.sharedState.set(
-      "viewState.processingQueueCount",
-      (this.sharedState.viewState.processingQueueCount.get() as number) +
-        entityDrafts.length
-    );
+    this.stateStore.viewState.processingQueueCount.value += entityDrafts.length;
 
     const updatePromise = async (entityDrafts: PaperEntityDraft[]) => {
       const movedEntityDrafts = await Promise.all(
@@ -499,11 +453,7 @@ export class EntityInteractor {
 
     await updatePromise(entityDrafts);
 
-    this.sharedState.set(
-      "viewState.processingQueueCount",
-      (this.sharedState.viewState.processingQueueCount.get() as number) -
-        entityDrafts.length
-    );
+    this.stateStore.viewState.processingQueueCount.value -= entityDrafts.length;
   }
 
   colorizeCategorizers(
@@ -531,15 +481,12 @@ export class EntityInteractor {
 
     if (
       categorizerType === "PaperFolder" &&
-      (this.sharedState.get("selectionState.pluginLinkedFolder")
-        .value as string) === oldCategorizerName &&
+      this.stateStore.selectionState.pluginLinkedFolder.value ===
+        oldCategorizerName &&
       success
     ) {
-      console.log("rename linked folder");
-      this.sharedState.set(
-        "selectionState.pluginLinkedFolder",
-        newCategorizerName
-      );
+      this.stateStore.selectionState.pluginLinkedFolder.value =
+        newCategorizerName;
       this.preference.set("pluginLinkedFolder", newCategorizerName);
     }
   }
@@ -587,11 +534,7 @@ export class EntityInteractor {
   async locateMainFile(entitiesStr: string) {
     let entityDrafts = JSON.parse(entitiesStr) as PaperEntityDraft[];
 
-    this.sharedState.set(
-      "viewState.processingQueueCount",
-      (this.sharedState.viewState.processingQueueCount.get() as number) +
-        entityDrafts.length
-    );
+    this.stateStore.viewState.processingQueueCount.value += entityDrafts.length;
 
     try {
       const downloadPromise = async (entityDraft: PaperEntityDraft) => {
@@ -609,11 +552,7 @@ export class EntityInteractor {
       }`;
     }
 
-    this.sharedState.set(
-      "viewState.processingQueueCount",
-      (this.sharedState.viewState.processingQueueCount.get() as number) -
-        entityDrafts.length
-    );
+    this.stateStore.viewState.processingQueueCount.value -= entityDrafts.length;
   }
 
   // ============================================================
@@ -646,9 +585,9 @@ export class EntityInteractor {
 
   // ============================================================
   async initDB() {
-    this.sharedState.set("selectionState.selectedIndex", "[]");
-    this.sharedState.set("selectionState.selectedCategorizer", "");
+    this.stateStore.selectionState.selectedIndex.value = [];
+    this.stateStore.selectionState.selectedCategorizer.value = "";
     await this.dbRepository.initRealm(true);
-    this.sharedState.set("viewState.realmReinited", Date.now());
+    this.stateStore.viewState.realmReinited.value = Date.now();
   }
 }

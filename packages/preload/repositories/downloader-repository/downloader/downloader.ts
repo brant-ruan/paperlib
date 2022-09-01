@@ -2,7 +2,6 @@ import { HttpProxyAgent, HttpsProxyAgent } from "hpagent";
 
 import { PaperEntityDraft } from "../../../models/PaperEntityDraft";
 import { Preference, DownloaderPreference } from "../../../utils/preference";
-import { SharedState } from "../../../utils/appstate";
 import { PreloadStateStore } from "../../../../state/appstate";
 import { downloadPDFs } from "../../../utils/got";
 
@@ -13,7 +12,6 @@ export interface DownloaderRequestType {
 }
 
 export interface DownloaderType {
-  sharedState: SharedState;
   stateStore: PreloadStateStore;
   preference: Preference;
   download(entityDraft: PaperEntityDraft): Promise<PaperEntityDraft | null>;
@@ -29,16 +27,10 @@ export interface DownloaderType {
 }
 
 export class Downloader implements DownloaderType {
-  sharedState: SharedState;
   stateStore: PreloadStateStore;
   preference: Preference;
 
-  constructor(
-    sharedState: SharedState,
-    stateStore: PreloadStateStore,
-    preference: Preference
-  ) {
-    this.sharedState = sharedState;
+  constructor(stateStore: PreloadStateStore, preference: Preference) {
     this.stateStore = stateStore;
     this.preference = preference;
   }

@@ -3,6 +3,8 @@ import { PropType } from "vue";
 import { PaperCategorizer } from "../../../../../../preload/models/PaperCategorizer";
 import { BIconXLg } from "bootstrap-icons-vue";
 
+import { RendererStateStore } from "../../../../../../state/appstate";
+
 const props = defineProps({
   categorizers: {
     type: Array as PropType<PaperCategorizer[]>,
@@ -10,20 +12,18 @@ const props = defineProps({
   },
   categorizerType: String,
 });
+const viewState = RendererStateStore.useViewState();
 
 const emits = defineEmits(["delete-categorizer"]);
 
 const onClick = (e: MouseEvent, categorizer: string) => {
   e.preventDefault();
   e.stopPropagation();
-  window.appInteractor.setState("viewState.searchMode", "advanced");
+  viewState.searchMode = "advanced";
 
   const key = props.categorizerType === "PaperTag" ? "tags" : "folders";
 
-  window.appInteractor.setState(
-    "viewState.searchText",
-    `${key}.name contains '${categorizer}'`
-  );
+  viewState.searchText = `${key}.name contains '${categorizer}'`;
 };
 
 const onDeleteClick = (e: MouseEvent, categorizer: string) => {

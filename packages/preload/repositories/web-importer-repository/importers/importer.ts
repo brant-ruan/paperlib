@@ -1,7 +1,6 @@
 import { HttpProxyAgent, HttpsProxyAgent } from "hpagent";
 
 import { PaperEntityDraft } from "../../../models/PaperEntityDraft";
-import { SharedState } from "../../../utils/appstate";
 import { PreloadStateStore } from "../../../../state/appstate";
 import { Preference } from "../../../utils/preference";
 
@@ -12,7 +11,6 @@ export interface WebContentType {
 }
 
 export interface WebImporterType {
-  sharedState: SharedState;
   stateStore: PreloadStateStore;
   preference: Preference;
 
@@ -27,18 +25,15 @@ export interface WebImporterType {
 }
 
 export class WebImporter implements WebImporterType {
-  sharedState: SharedState;
   stateStore: PreloadStateStore;
   preference: Preference;
   urlRegExp: RegExp;
 
   constructor(
-    sharedState: SharedState,
     stateStore: PreloadStateStore,
     preference: Preference,
     urlRegExp: RegExp
   ) {
-    this.sharedState = sharedState;
     this.stateStore = stateStore;
     this.preference = preference;
     this.urlRegExp = urlRegExp;
