@@ -1,21 +1,17 @@
 <script setup lang="ts">
-import { ref, Ref } from "vue";
+import { ref, Ref, defineEmits } from "vue";
 
 import {
   PaperEntity,
   PaperEntityPlaceholder,
 } from "../../../../preload/models/PaperEntity";
 import { FeedEntity } from "../../../../preload/models/FeedEntity";
-import { PaperEntityDraft } from "../../../../preload/models/PaperEntityDraft";
-import { FeedEntityDraft } from "../../../../preload/models/FeedEntityDraft";
-
 import WindowMenuBar from "./menubar-view/window-menu-bar.vue";
 import PaperDataView from "./data-view/paper-data-view.vue";
 import FeedDataView from "./data-view/feed-data-view.vue";
 import PaperDetailView from "./detail-view/paper-detail-view.vue";
 import FeedDetailView from "./detail-view/feed-detail-view.vue";
 
-import { createModalView } from "../components/modal-view";
 import { RendererStateStore } from "../../../../state/appstate";
 
 const props = defineProps({
@@ -134,24 +130,7 @@ const scrapeSelectedEntitiesFrom = (scraperName: string) => {
 
 const deleteSelectedEntities = () => {
   if (contentType.value === "library") {
-    createModalView(
-      "Delete",
-      `Are you sure to delete ${selectedEntities.value.length} paper(s)?`,
-      () => {
-        const ids = selectedEntities.value.map(
-          (entity) => entity._id as string
-        );
-        window.appInteractor.setState(
-          "selectionState.selectedIndex",
-          JSON.stringify([])
-        );
-        void window.entityInteractor.delete(ids);
-        viewState.isModalShown = false;
-      },
-      () => {
-        viewState.isModalShown = false;
-      }
-    );
+    emits("delete");
   }
 };
 
@@ -426,15 +405,20 @@ window.addEventListener("keydown", preventSpaceArrowScrollEvent, true);
 
 window.appInteractor.registerMainSignal("shortcut-cmd-shift-c", () => {
   if (selectedEntities.value.length >= 1) {
-    exportSelectedEntities("bibtex");
+    exportSelectedEntities("BibTex");
   }
 });
 
-window.appInteractor.registerMainSignal("shortcut-cmd-e", () => {
-  if (selectedEntities.value.length == 1) {
-    editSelectedEntities();
+window.appInteractor.registerMainSignal("shortcut-cmd-shift-k", () => {
+  if (selectedEntities.value.length >= 1) {
+    exportSelectedEntities("BibTex-Key");
   }
-});
+}),
+  window.appInteractor.registerMainSignal("shortcut-cmd-e", () => {
+    if (selectedEntities.value.length == 1) {
+      editSelectedEntities();
+    }
+  });
 
 window.appInteractor.registerMainSignal("shortcut-cmd-f", () => {
   if (selectedEntities.value.length >= 1) {
